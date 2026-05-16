@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:market_app/core/constants/app_constants.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -275,13 +276,13 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 7) {
         // Use raw SQL to add synced_at columns to header tables to avoid generator type issues during migration.
-        await this.customStatement(
+        await customStatement(
           'ALTER TABLE purchase_headers_table ADD COLUMN synced_at TIMESTAMP NULL',
         );
-        await this.customStatement(
+        await customStatement(
           'ALTER TABLE sales_headers_table ADD COLUMN synced_at TIMESTAMP NULL',
         );
-        await this.customStatement(
+        await customStatement(
           'ALTER TABLE transfer_headers_table ADD COLUMN synced_at TIMESTAMP NULL',
         );
       }
@@ -724,7 +725,7 @@ class AppDatabase extends _$AppDatabase {
 QueryExecutor _openConnection() {
   return LazyDatabase(() async {
     final dir = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dir.path, 'market_app.db'));
+    final file = File(p.join(dir.path, AppConstants.databaseFileName));
     return NativeDatabase.createInBackground(file);
   });
 }

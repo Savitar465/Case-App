@@ -788,12 +788,12 @@ products(name, price)
       final rows = (response as List).cast<Map<String, dynamic>>();
       return rows.map(_InventoryDisplayRow.fromRemote).toList();
     } on PostgrestException catch (error) {
-      print(error);
+      debugPrint('Inventory load PostgrestException: $error');
       throw _InventoryLoadException(error.message);
     } on TypeError {
       throw const _InventoryLoadException('Respuesta inesperada de Supabase');
     } catch (error) {
-      print(error);
+      debugPrint('Inventory load error: $error');
       throw _InventoryLoadException(error.toString());
     }
   }

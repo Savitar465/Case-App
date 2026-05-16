@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:market_app/features/products/domain/repositories/product_repository.dart';
 import 'package:market_app/features/inventory/domain/entities/employee.dart';
 import 'package:market_app/features/inventory/domain/entities/inventory_location.dart';
@@ -270,7 +272,11 @@ class InventoryRepositoryImpl implements InventoryRepository {
       try {
         await productRepository.syncProducts();
       } catch (error) {
-        print(error);
+        developer.log(
+          'Sync failure (continuing with next item)',
+          name: 'InventoryRepositoryImpl',
+          error: error,
+        );
       }
     }
 
@@ -278,7 +284,11 @@ class InventoryRepositoryImpl implements InventoryRepository {
       try {
         await productRepository.syncPendingOperations();
       } catch (error) {
-        print(error);
+        developer.log(
+          'Sync failure (continuing with next item)',
+          name: 'InventoryRepositoryImpl',
+          error: error,
+        );
       }
     }
 
@@ -317,7 +327,11 @@ class InventoryRepositoryImpl implements InventoryRepository {
           DateTime.now().toUtc(),
         );
       } catch (error) {
-        print(error);
+        developer.log(
+          'Sync failure (continuing with next item)',
+          name: 'InventoryRepositoryImpl',
+          error: error,
+        );
       }
     }
 
@@ -329,7 +343,11 @@ class InventoryRepositoryImpl implements InventoryRepository {
           DateTime.now().toUtc(),
         );
       } catch (error) {
-        print(error);
+        developer.log(
+          'Sync failure (continuing with next item)',
+          name: 'InventoryRepositoryImpl',
+          error: error,
+        );
       }
     }
 
@@ -341,12 +359,15 @@ class InventoryRepositoryImpl implements InventoryRepository {
           await _localDataSource.markMovementSynced(movement.id, syncedAt);
         }
       } catch (error) {
-        print(error);
+        developer.log(
+          'Sync failure (continuing with next item)',
+          name: 'InventoryRepositoryImpl',
+          error: error,
+        );
       }
     }
 
     final stocksForSync = await _localDataSource.fetchStocksForSync();
-    print(stocksForSync);
     final stockPayload = <Map<String, dynamic>>[];
     for (final stock in stocksForSync) {
       final key = '${stock.productId}|${stock.locationId}';
@@ -368,7 +389,11 @@ class InventoryRepositoryImpl implements InventoryRepository {
       try {
         await remote.upsertInventoryStocks(stockPayload);
       } catch (error) {
-        print(error);
+        developer.log(
+          'Sync failure (continuing with next item)',
+          name: 'InventoryRepositoryImpl',
+          error: error,
+        );
       }
     }
 
@@ -483,7 +508,11 @@ class InventoryRepositoryImpl implements InventoryRepository {
     try {
       await remote.upsertInventoryStocks(payload);
     } catch (error) {
-      print(error);
+      developer.log(
+        'Failed to push inventory stocks',
+        name: 'InventoryRepositoryImpl',
+        error: error,
+      );
     }
   }
 }

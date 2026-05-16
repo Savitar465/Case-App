@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:market_app/features/inventory/data/models/employee_model.dart';
 import 'package:market_app/features/inventory/data/models/inventory_location_model.dart';
 import 'package:market_app/features/inventory/data/models/inventory_transaction_model.dart';
@@ -126,8 +128,13 @@ class InventoryRemoteDataSource {
           .upsert(map, onConflict: 'id')
           .select()
           .maybeSingle();
-    } catch (error) {
-      print('Error during upsert: $error');
+    } catch (error, stackTrace) {
+      developer.log(
+        'Failed to upsert location',
+        name: 'InventoryRemoteDataSource',
+        error: error,
+        stackTrace: stackTrace,
+      );
     }
   }
 

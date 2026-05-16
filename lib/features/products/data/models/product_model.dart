@@ -105,25 +105,6 @@ class ProductModel extends Product {
       return null;
     }
 
-    bool parseBool(dynamic value, {bool fallback = false}) {
-      if (value is bool) {
-        return value;
-      }
-      if (value is num) {
-        return value != 0;
-      }
-      if (value is String) {
-        final normalized = value.toLowerCase();
-        if (normalized == 'true' || normalized == '1') {
-          return true;
-        }
-        if (normalized == 'false' || normalized == '0') {
-          return false;
-        }
-      }
-      return fallback;
-    }
-
     DateTime? parseDate(dynamic value) {
       if (value is DateTime) {
         return value;
@@ -149,11 +130,14 @@ class ProductModel extends Product {
 
     return ProductModel(
       id: (map['id'] ?? map['product_id']).toString(),
+      sellerId: (map['seller_id'] ?? map['sellerId'] ?? '').toString(),
       name: (map['name'] ?? 'Untitled product').toString(),
       description: map['description']?.toString(),
       price: parseDouble(map['price']),
       quantity: parseInt(map['quantity']),
-      updatedAt: updatedAt, sellerId: '',
+      metadata: metadata,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
     );
   }
 

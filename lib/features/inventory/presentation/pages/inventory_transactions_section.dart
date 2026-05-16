@@ -850,8 +850,8 @@ class _LineEditorState extends State<_LineEditor> {
                       ),
                     );
                   }
-                } catch (error){
-                  print(error);
+                } catch (error) {
+                  debugPrint('Add transaction item failed: $error');
                 }
               },
               child: const Text('Agregar'),

@@ -107,7 +107,6 @@ class ProductLocalDataSource {
     final dirtyIds = await _database.fetchDirtyProductIds();
     final now = DateTime.now().toUtc();
 
-    print(dirtyIds);
     final entries = remoteProducts
         .where((product) => !dirtyIds.contains(product.id))
         .map(

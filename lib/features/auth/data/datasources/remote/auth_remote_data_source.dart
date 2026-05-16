@@ -69,7 +69,6 @@ class AuthRemoteDataSource {
           .select('*, roles(*)')
           .eq('user_id', userId);
 
-      print(response);
       if (response is! List) {
         return null;
       }
@@ -165,9 +164,11 @@ class AuthRemoteDataSource {
   }
 }
 
+/// Thrown by [AuthRemoteDataSource] when Supabase returns a malformed or
+/// unexpected response. Repositories translate this into an `AuthFailure`.
 class AuthRemoteException implements Exception {
   const AuthRemoteException(this.message);
   final String message;
   @override
-  String toString() => message;
+  String toString() => 'AuthRemoteException: $message';
 }

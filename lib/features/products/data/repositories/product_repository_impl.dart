@@ -14,8 +14,8 @@ class ProductRepositoryImpl implements ProductRepository {
   ProductRepositoryImpl({
     required ProductRemoteDataSource remoteDataSource,
     required ProductLocalDataSource localDataSource,
-  }) : _remoteDataSource = remoteDataSource,
-       _localDataSource = localDataSource;
+  })  : _remoteDataSource = remoteDataSource,
+        _localDataSource = localDataSource;
 
   final ProductRemoteDataSource _remoteDataSource;
   final ProductLocalDataSource _localDataSource;
@@ -37,13 +37,8 @@ class ProductRepositoryImpl implements ProductRepository {
         remoteProducts,
         sellerId: sellerId,
       );
-      print("------ $remoteProducts");
-    } on ProductRemoteException catch (error) {
-      throw ProductFailure(error.message);
-    } on SocketException {
-      throw const ProductFailure('No internet connection');
-    } on TimeoutException {
-      throw const ProductFailure('Request timed out');
+    } catch (error) {
+      throw _mapInfraError(error);
     }
   }
 
@@ -52,34 +47,16 @@ class ProductRepositoryImpl implements ProductRepository {
     final pending = await _localDataSource.fetchPendingProducts();
     for (final pendingProduct in pending) {
       final productEntity = pendingProduct.toEntity();
-      if (pendingProduct.syncStatus == ProductSyncStatus.pendingDelete) {
-        try {
+      try {
+        if (pendingProduct.syncStatus == ProductSyncStatus.pendingDelete) {
           await _remoteDataSource.deleteProduct(pendingProduct.id);
           await _localDataSource.removeProduct(pendingProduct.id);
-        } on ProductRemoteException catch (error) {
-          throw ProductFailure(error.message, product: productEntity);
-        } on SocketException {
-          throw ProductFailure(
-            'No internet connection',
-            product: productEntity,
-          );
-        } on TimeoutException {
-          throw ProductFailure('Request timed out', product: productEntity);
-        }
-      } else {
-        try {
+        } else {
           final remote = await _remoteDataSource.upsertProduct(pendingProduct);
           await _localDataSource.markProductSynced(remote);
-        } on ProductRemoteException catch (error) {
-          throw ProductFailure(error.message, product: productEntity);
-        } on SocketException {
-          throw ProductFailure(
-            'No internet connection',
-            product: productEntity,
-          );
-        } on TimeoutException {
-          throw ProductFailure('Request timed out', product: productEntity);
         }
+      } catch (error) {
+        throw _mapInfraError(error, product: productEntity);
       }
     }
   }
@@ -103,15 +80,8 @@ class ProductRepositoryImpl implements ProductRepository {
       final remote = await _remoteDataSource.upsertProduct(localModel);
       await _localDataSource.markProductSynced(remote);
       return remote.toEntity();
-    } on ProductRemoteException catch (error) {
-      throw ProductFailure(error.message, product: localModel.toEntity());
-    } on SocketException {
-      throw ProductFailure(
-        'No internet connection',
-        product: localModel.toEntity(),
-      );
-    } on TimeoutException {
-      throw ProductFailure('Request timed out', product: localModel.toEntity());
+    } catch (error) {
+      throw _mapInfraError(error, product: localModel.toEntity());
     }
   }
 
@@ -132,25 +102,17 @@ class ProductRepositoryImpl implements ProductRepository {
       final remote = await _remoteDataSource.upsertProduct(model);
       await _localDataSource.markProductSynced(remote);
       return remote.toEntity();
-    } on ProductRemoteException catch (error, stackTrace) {
+    } catch (error, stackTrace) {
+      // Simple-product creation is best-effort online: the local row is the
+      // source of truth and a later `syncPendingOperations` will retry.
       developer.log(
-        'Failed to sync simple product',
+        'Failed to sync simple product (will retry later)',
         name: 'ProductRepositoryImpl',
         error: error,
         stackTrace: stackTrace,
       );
-    } on SocketException {
-      developer.log(
-        'Network unavailable while syncing simple product',
-        name: 'ProductRepositoryImpl',
-      );
-    } on TimeoutException {
-      developer.log(
-        'Timeout while syncing simple product',
-        name: 'ProductRepositoryImpl',
-      );
+      return model.toEntity();
     }
-    return model.toEntity();
   }
 
   @override
@@ -162,18 +124,14 @@ class ProductRepositoryImpl implements ProductRepository {
     await _localDataSource.markProductPendingDelete(productId);
 
     final pendingEntity = existing.toEntity().copyWith(
-      syncStatus: ProductSyncStatus.pendingDelete,
-    );
+          syncStatus: ProductSyncStatus.pendingDelete,
+        );
 
     try {
       await _remoteDataSource.deleteProduct(productId);
       await _localDataSource.removeProduct(productId);
-    } on ProductRemoteException catch (error) {
-      throw ProductFailure(error.message, product: pendingEntity);
-    } on SocketException {
-      throw ProductFailure('No internet connection', product: pendingEntity);
-    } on TimeoutException {
-      throw ProductFailure('Request timed out', product: pendingEntity);
+    } catch (error) {
+      throw _mapInfraError(error, product: pendingEntity);
     }
   }
 
@@ -187,17 +145,30 @@ class ProductRepositoryImpl implements ProductRepository {
   Future<Seller?> refreshSellerForUser(String userId) async {
     try {
       final seller = await _remoteDataSource.fetchSellerForUser(userId);
-      if (seller != null) {
-        await _localDataSource.saveSeller(seller);
-        return seller.toEntity();
+      if (seller == null) {
+        return null;
       }
-      return null;
-    } on ProductRemoteException catch (error) {
-      throw ProductFailure(error.message);
-    } on SocketException {
-      throw const ProductFailure('No internet connection');
-    } on TimeoutException {
-      throw const ProductFailure('Request timed out');
+      await _localDataSource.saveSeller(seller);
+      return seller.toEntity();
+    } catch (error) {
+      throw _mapInfraError(error);
     }
+  }
+
+  /// Translates infrastructure exceptions into a [ProductFailure] so the
+  /// presentation layer only deals with one error type. Anything we don't
+  /// recognize is re-thrown unchanged.
+  ProductFailure _mapInfraError(Object error, {Product? product}) {
+    if (error is ProductFailure) return error;
+    if (error is ProductRemoteException) {
+      return ProductFailure(error.message, product: product);
+    }
+    if (error is SocketException) {
+      return ProductFailure('No internet connection', product: product);
+    }
+    if (error is TimeoutException) {
+      return ProductFailure('Request timed out', product: product);
+    }
+    return ProductFailure(error.toString(), product: product);
   }
 }

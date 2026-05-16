@@ -1,4 +1,4 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 
 import 'package:market_app/features/auth/domain/entities/auth_failure.dart';
@@ -15,14 +15,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required LoginUseCase loginUseCase,
     required LogoutUseCase logoutUseCase,
     required RestoreSessionUseCase restoreSessionUseCase,
-  }) : _loginUseCase = loginUseCase,
-       _logoutUseCase = logoutUseCase,
-       _restoreSessionUseCase = restoreSessionUseCase,
-       super(const AuthInitial()) {
+  })  : _loginUseCase = loginUseCase,
+        _logoutUseCase = logoutUseCase,
+        _restoreSessionUseCase = restoreSessionUseCase,
+        super(const AuthInitial()) {
     on<AuthStarted>(_onAuthStarted);
     on<LoginSubmitted>(_onLoginSubmitted);
     on<LogoutRequested>(_onLogoutRequested);
   }
+
+  static const _genericLoginError = 'Unable to login. Please try again.';
 
   final LoginUseCase _loginUseCase;
   final LogoutUseCase _logoutUseCase;
@@ -35,12 +37,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(const AuthLoading());
     try {
       final session = await _restoreSessionUseCase();
-      if (session != null) {
-        emit(AuthAuthenticated(session: session));
-      } else {
-        emit(const AuthInitial());
-      }
+      emit(session != null
+          ? AuthAuthenticated(session: session)
+          : const AuthInitial());
     } catch (_) {
+      // A failure to read the cached session should not block the user from
+      // signing in fresh.
       emit(const AuthInitial());
     }
   }
@@ -57,11 +59,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       emit(AuthAuthenticated(session: session));
     } on AuthFailure catch (error) {
-      emit(AuthError(message: error.message));
-      emit(const AuthInitial());
+      _emitTransientError(emit, error.message);
     } catch (_) {
-      emit(const AuthError(message: 'Unable to login. Please try again.'));
-      emit(const AuthInitial());
+      _emitTransientError(emit, _genericLoginError);
     }
   }
 
@@ -71,6 +71,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(const AuthLoading());
     await _logoutUseCase();
+    emit(const AuthInitial());
+  }
+
+  /// Surfaces an [AuthError] to listeners (snackbars, banners) and immediately
+  /// resets to [AuthInitial] so the login form is re-enabled.
+  void _emitTransientError(Emitter<AuthState> emit, String message) {
+    emit(AuthError(message: message));
     emit(const AuthInitial());
   }
 }

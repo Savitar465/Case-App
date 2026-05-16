@@ -4,7 +4,7 @@ sealed class AuthState extends Equatable {
   const AuthState();
 
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => const [];
 }
 
 class AuthInitial extends AuthState {
@@ -23,15 +23,7 @@ class AuthAuthenticated extends AuthState {
   bool get isOffline => session.fromCache;
 
   @override
-  List<Object?> get props => [
-    session.user.id,
-    session.user.role,
-    session.user.sellerId,
-    session.accessToken,
-    session.refreshToken,
-    session.expiresAt,
-    session.fromCache,
-  ];
+  List<Object?> get props => [session];
 }
 
 class AuthError extends AuthState {

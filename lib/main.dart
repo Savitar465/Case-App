@@ -8,78 +8,106 @@ import 'core/security/credential_cipher.dart';
 import 'features/auth/data/datasources/local/auth_local_data_source.dart';
 import 'features/auth/data/datasources/remote/auth_remote_data_source.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
-import 'features/inventory/presentation/bloc/locations_cubit.dart';
+import 'features/auth/domain/repositories/auth_repository.dart';
+import 'features/inventory/data/datasources/local/inventory_local_data_source.dart';
+import 'features/inventory/data/datasources/remote/inventory_remote_data_source.dart';
+import 'features/inventory/data/repositories/inventory_repository_impl.dart';
+import 'features/inventory/domain/repositories/inventory_repository.dart';
 import 'features/products/data/datasources/local/product_local_data_source.dart';
 import 'features/products/data/datasources/remote/product_remote_data_source.dart';
 import 'features/products/data/repositories/product_repository_impl.dart';
-import 'features/inventory/data/datasources/local/inventory_local_data_source.dart';
-import 'features/inventory/data/repositories/inventory_repository_impl.dart';
-import 'features/inventory/data/datasources/remote/inventory_remote_data_source.dart';
+import 'features/products/domain/repositories/product_repository.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-  const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+  final supabase = await _initializeSupabase();
+  final dependencies = _buildDependencies(supabase);
 
-  if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
-    throw Exception(
-      'Supabase credentials are missing. Provide SUPABASE_URL and SUPABASE_ANON_KEY using --dart-define at build/run time.',
+  runApp(_AppRoot(dependencies: dependencies));
+}
+
+Future<SupabaseClient> _initializeSupabase() async {
+  const url = String.fromEnvironment('SUPABASE_URL');
+  const anonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+
+  if (url.isEmpty || anonKey.isEmpty) {
+    throw StateError(
+      'Supabase credentials are missing. '
+      'Provide SUPABASE_URL and SUPABASE_ANON_KEY via --dart-define.',
     );
   }
 
-  await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
+  await Supabase.initialize(url: url, anonKey: anonKey);
+  return Supabase.instance.client;
+}
 
-  final supabaseClient = Supabase.instance.client;
+_AppDependencies _buildDependencies(SupabaseClient supabase) {
   final database = AppDatabase();
-  final credentialCipher = CredentialCipher();
+  final cipher = CredentialCipher();
 
   final authRepository = AuthRepositoryImpl(
-    remoteDataSource: AuthRemoteDataSource(supabaseClient),
+    remoteDataSource: AuthRemoteDataSource(supabase),
     localDataSource: AuthLocalDataSource(
       database: database,
-      credentialCipher: credentialCipher,
+      credentialCipher: cipher,
     ),
   );
 
   final productRepository = ProductRepositoryImpl(
-    remoteDataSource: ProductRemoteDataSource(supabaseClient),
+    remoteDataSource: ProductRemoteDataSource(supabase),
     localDataSource: ProductLocalDataSource(database),
   );
 
   final inventoryRepository = InventoryRepositoryImpl(
     localDataSource: InventoryLocalDataSource(database),
-    remoteDataSource: InventoryRemoteDataSource(supabaseClient),
+    remoteDataSource: InventoryRemoteDataSource(supabase),
     productRepository: productRepository,
   );
 
-  runApp(
-    MultiRepositoryProvider(
+  return _AppDependencies(
+    authRepository: authRepository,
+    productRepository: productRepository,
+    inventoryRepository: inventoryRepository,
+  );
+}
+
+class _AppDependencies {
+  const _AppDependencies({
+    required this.authRepository,
+    required this.productRepository,
+    required this.inventoryRepository,
+  });
+
+  final AuthRepository authRepository;
+  final ProductRepository productRepository;
+  final InventoryRepository inventoryRepository;
+}
+
+class _AppRoot extends StatelessWidget {
+  const _AppRoot({required this.dependencies});
+
+  final _AppDependencies dependencies;
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiRepositoryProvider(
       providers: [
-        RepositoryProvider<AuthRepositoryImpl>.value(value: authRepository),
-        RepositoryProvider<ProductRepositoryImpl>.value(
-          value: productRepository,
+        RepositoryProvider<AuthRepository>.value(
+          value: dependencies.authRepository,
         ),
-        RepositoryProvider<InventoryRepositoryImpl>.value(
-          value: inventoryRepository,
+        RepositoryProvider<ProductRepository>.value(
+          value: dependencies.productRepository,
+        ),
+        RepositoryProvider<InventoryRepository>.value(
+          value: dependencies.inventoryRepository,
         ),
       ],
-      child: MultiBlocProvider(
-        providers: [
-          BlocProvider<LocationsCubit>(
-            create: (context) => LocationsCubit(
-              repository: context.read<InventoryRepositoryImpl>(),
-            )..initialize(),
-          ),
-
-          // Add other BlocProvider/ Cubit providers here if needed
-        ],
-        child: App(
-          authRepository: authRepository,
-          productRepository: productRepository,
-          inventoryRepository: inventoryRepository,
-        ),
+      child: App(
+        authRepository: dependencies.authRepository,
+        productRepository: dependencies.productRepository,
+        inventoryRepository: dependencies.inventoryRepository,
       ),
-    ),
-  );
+    );
+  }
 }

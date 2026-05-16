@@ -8,6 +8,12 @@ A simple market application scaffold using Flutter, Clean Architecture, and BLoC
 - Login page with email/password form and basic validation.
 - Market main page (placeholder list of products) with logout.
 
+## Run project
+1. **Create an environment file:**  
+   Create a file named `env.dev.json` in the root of the project.
+2. **Run flutter**
+   With args: --dart-define-from-file=env.dev.json
+
 ## Directory Structure
 ```
 lib/
