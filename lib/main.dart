@@ -3,23 +3,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app/app.dart';
-import 'core/database/app_database.dart';
 import 'core/security/credential_cipher.dart';
 import 'features/auth/data/datasources/local/auth_local_data_source.dart';
-import 'features/business_profile/data/datasources/remote/business_remote_data_source.dart';
-import 'features/business_profile/data/repositories/business_repository_impl.dart';
-import 'features/business_profile/domain/repositories/business_repository.dart';
 import 'features/auth/data/datasources/remote/auth_remote_data_source.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/auth/domain/repositories/auth_repository.dart';
-import 'features/inventory/data/datasources/local/inventory_local_data_source.dart';
-import 'features/inventory/data/datasources/remote/inventory_remote_data_source.dart';
-import 'features/inventory/data/repositories/inventory_repository_impl.dart';
-import 'features/inventory/domain/repositories/inventory_repository.dart';
-import 'features/products/data/datasources/local/product_local_data_source.dart';
-import 'features/products/data/datasources/remote/product_remote_data_source.dart';
-import 'features/products/data/repositories/product_repository_impl.dart';
-import 'features/products/domain/repositories/product_repository.dart';
+import 'features/business/data/datasources/remote/business_remote_data_source.dart';
+import 'features/business/data/repositories/business_repository_impl.dart';
+import 'features/business/domain/repositories/business_repository.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,26 +37,11 @@ Future<SupabaseClient> _initializeSupabase() async {
 }
 
 _AppDependencies _buildDependencies(SupabaseClient supabase) {
-  final database = AppDatabase();
   final cipher = CredentialCipher();
 
   final authRepository = AuthRepositoryImpl(
     remoteDataSource: AuthRemoteDataSource(supabase),
-    localDataSource: AuthLocalDataSource(
-      database: database,
-      credentialCipher: cipher,
-    ),
-  );
-
-  final productRepository = ProductRepositoryImpl(
-    remoteDataSource: ProductRemoteDataSource(supabase),
-    localDataSource: ProductLocalDataSource(database),
-  );
-
-  final inventoryRepository = InventoryRepositoryImpl(
-    localDataSource: InventoryLocalDataSource(database),
-    remoteDataSource: InventoryRemoteDataSource(supabase),
-    productRepository: productRepository,
+    localDataSource: AuthLocalDataSource(credentialCipher: cipher),
   );
 
   final businessRepository = BusinessRepositoryImpl(
@@ -74,8 +50,6 @@ _AppDependencies _buildDependencies(SupabaseClient supabase) {
 
   return _AppDependencies(
     authRepository: authRepository,
-    productRepository: productRepository,
-    inventoryRepository: inventoryRepository,
     businessRepository: businessRepository,
   );
 }
@@ -83,14 +57,10 @@ _AppDependencies _buildDependencies(SupabaseClient supabase) {
 class _AppDependencies {
   const _AppDependencies({
     required this.authRepository,
-    required this.productRepository,
-    required this.inventoryRepository,
     required this.businessRepository,
   });
 
   final AuthRepository authRepository;
-  final ProductRepository productRepository;
-  final InventoryRepository inventoryRepository;
   final BusinessRepository businessRepository;
 }
 
@@ -106,22 +76,11 @@ class _AppRoot extends StatelessWidget {
         RepositoryProvider<AuthRepository>.value(
           value: dependencies.authRepository,
         ),
-        RepositoryProvider<ProductRepository>.value(
-          value: dependencies.productRepository,
-        ),
-        RepositoryProvider<InventoryRepository>.value(
-          value: dependencies.inventoryRepository,
-        ),
         RepositoryProvider<BusinessRepository>.value(
           value: dependencies.businessRepository,
         ),
       ],
-      child: App(
-        authRepository: dependencies.authRepository,
-        productRepository: dependencies.productRepository,
-        inventoryRepository: dependencies.inventoryRepository,
-        businessRepository: dependencies.businessRepository,
-      ),
+      child: App(authRepository: dependencies.authRepository),
     );
   }
 }

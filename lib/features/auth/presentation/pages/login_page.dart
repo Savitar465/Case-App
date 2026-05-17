@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:market_app/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:market_app/features/products/presentation/pages/market_home_page.dart';
+import 'package:market_app/features/business/presentation/pages/business_list_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -58,7 +58,7 @@ class _LoginPageState extends State<LoginPage> {
             }
             Navigator.of(
               context,
-            ).pushReplacementNamed(MarketHomePage.routeName);
+            ).pushReplacementNamed(BusinessListPage.routeName);
           }
         },
         builder: (context, state) {

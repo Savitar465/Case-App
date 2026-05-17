@@ -15,11 +15,17 @@ and you should flag the drift.
 
 - Flutter app, Dart `^3.9.2`, package name `market_app`.
 - State: `flutter_bloc` (Bloc + Cubit). Equality: `equatable`.
-- Local DB: `drift` (SQLite). Remote: Supabase (`supabase_flutter`).
+- Persistence: Supabase (`supabase_flutter`) is the source of truth. **No
+  local database** — Drift/SQLite was removed. Repositories use a
+  per-session in-memory cache (`lib/core/reactive/replay_subject.dart`)
+  behind the local data sources so the presentation layer keeps getting
+  reactive streams.
+- Secure storage: `flutter_secure_storage` (encrypted cached auth session
+  only).
 - Auth crypto: `cryptography` (AES-GCM + PBKDF2).
 - Composition root: `lib/main.dart`. **No** DI container.
 - Routing: `MaterialApp.routes` + named pushes. **No** `go_router`.
-- Codegen: only Drift (`build_runner`). **No** `freezed` / `json_serializable`.
+- Codegen: **none**. **No** `freezed` / `json_serializable` / Drift.
 
 ---
 
@@ -145,16 +151,18 @@ Abstract only. No fields, no implementation, no Supabase imports.
 
 ### Data sources
 
-- Local: takes `AppDatabase` (and a cipher if needed). Never knows about
-  Supabase.
-- Remote: takes `SupabaseClient`. Never writes to Drift.
+- Local: owns an in-memory cache (Map + `ReplaySubject` for streams) plus
+  `flutter_secure_storage` if it needs persistence across launches (the
+  auth cached session is the only thing that does today). Never knows
+  about Supabase.
+- Remote: takes `SupabaseClient`. Never touches the local cache.
 - Throw typed exceptions (`FooRemoteException`, `FooLocalException`) — not
   raw `Exception(...)`.
 
 ### Models
 
-- Prefer `class FooModel extends Foo { ... }` with `fromX` / `toCompanion`
-  factories.
+- Prefer `class FooModel extends Foo { ... }` with `fromRemote` /
+  `toRemoteMap` (and `fromEntity` if the repo round-trips through a model).
 - Provide `toEntity()` only if the model adds fields beyond the entity.
 - Models never escape `data/`.
 
@@ -192,8 +200,9 @@ class FooRepositoryImpl implements FooRepository {
 
 - All infrastructure errors map to one `_mapInfraError(...)` helper. Never
   duplicate four catch arms across methods.
-- Offline-first policy: write through local first, sync to remote, fall
-  back to cache on failure.
+- Remote-first policy: write to Supabase, then update the in-memory cache
+  on success. Reads stream from the cache; repositories call
+  `syncProducts` / `syncPendingChanges` to refill it from Supabase.
 
 ---
 
@@ -282,14 +291,15 @@ class FooCubit extends Cubit<FooState> {
   `debugPrint(...)` in `presentation/`.
 - `RepositoryProvider<FooRepositoryImpl>` — always provide the interface.
 - `SupabaseClient` references inside `presentation/` or `domain/`.
-- `Drift` types or generated `*TableCompanion` outside `data/`.
+- Re-introducing Drift / SQLite or any other on-device database without
+  prior discussion. Persistence is remote-only (Supabase).
 - `// ignore: <rule>` without a one-line justification on the same line.
 - `// TODO` without a name and a description of the fix. Prefer raising
   the question to the human reviewer instead.
 - New top-level utilities files (`utils.dart`, `helpers.dart`). Put helpers
   next to their one caller, or inside the class that uses them.
-- `Future.wait` over operations that mutate the same Drift table — order
-  matters; sequence them.
+- `Future.wait` over operations that mutate the same in-memory cache or
+  remote table — order matters; sequence them.
 - Catching `Exception` and silently swallowing it. If you intentionally
   ignore an error, leave a one-line comment explaining why.
 
@@ -306,9 +316,9 @@ Follow this exact order — do not skip:
    - Repository interface (`domain/repositories/<name>_repository.dart`)
    - Use cases (`domain/usecases/<verb>_use_case.dart`)
 3. **Data**:
-   - Models extending entities, with `fromX` / `toCompanion` factories.
-   - Local data source on `AppDatabase` (add tables + bump `schemaVersion`
-     + add `if (from < N)` migration branch if needed).
+   - Models extending entities, with `fromRemote` / `toRemoteMap` factories.
+   - Local data source: in-memory cache (Map + `ReplaySubject` for streams).
+     Use `flutter_secure_storage` only if the data must survive a restart.
    - Remote data source on `SupabaseClient`.
    - Repository implementation, with `_mapInfraError`.
 4. **Presentation**:
@@ -370,7 +380,8 @@ Domain shape:
 
 Data:
 - Remote table: market.<table_name> with columns <list>
-- Local: add a Drift table mirroring the remote columns plus `synced_at`.
+- Local: in-memory cache (Map keyed by id + `ReplaySubject<List<...>>` for
+  the watch stream). Do NOT add a Drift table — persistence is remote-only.
 
 Presentation:
 - One Cubit watching the repository stream + a single page rendering a
@@ -379,7 +390,6 @@ Presentation:
 Constraints:
 - Follow AGENTS.md sections 1–5 exactly.
 - Wire the repository as the abstract type in lib/main.dart.
-- Bump AppDatabase.schemaVersion and append an `if (from < N)` migration.
 - Run `flutter analyze --no-pub` at the end and report remaining issues.
 ```
 
@@ -459,29 +469,6 @@ Produce:
 Reference each finding with `path/to/file.dart:LINE`.
 ```
 
-### 10.6 Adding a Drift migration
-
-```
-Repo: market_app. Read AGENTS.md §3 and CONTRIBUTING.md §9.
-
-Add: <description of schema change>
-
-Steps:
-1. Edit lib/core/database/app_database.dart:
-   - Add/modify the table declaration.
-   - Bump `schemaVersion` to <current + 1>.
-   - Append `if (from < <new version>) { ... }` to `onUpgrade`. Migrations
-     are append-only — do not edit prior branches.
-2. Update affected models in data/models/.
-3. Run `dart run build_runner build --delete-conflicting-outputs`.
-4. Run `flutter analyze --no-pub` and report.
-
-Do NOT touch unrelated migrations. Do NOT regenerate the entire .g.dart
-manually.
-```
-
----
-
 ## 11. Self-check before declaring done
 
 Run through this list mentally on every change:
@@ -492,8 +479,8 @@ Run through this list mentally on every change:
 - [ ] New entities extend `Equatable` with full `props`.
 - [ ] New repositories have an abstract contract in `domain/`.
 - [ ] Cubits cancel subscriptions in `close()`.
-- [ ] Migrations appended (not edited) if schema changed.
 - [ ] `--dart-define` secrets unchanged and unread anywhere except
       `main.dart`.
+- [ ] No new on-device DB dependencies (drift, sqflite, hive, isar, ...).
 
 If any box is unchecked, fix it before reporting the task as complete.

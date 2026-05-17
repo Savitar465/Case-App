@@ -8,6 +8,15 @@ A simple market application scaffold using Flutter, Clean Architecture, and BLoC
 - Login page with email/password form and basic validation.
 - Market main page (placeholder list of products) with logout.
 
+## Persistence
+- Supabase is the **only** source of truth — there is no on-device
+  database (Drift/SQLite was removed).
+- Each `local/` data source keeps an in-memory cache (Map +
+  `ReplaySubject`) so the UI can stream from it during the session;
+  state is rebuilt on launch by repository sync calls.
+- Only the encrypted authentication session is persisted across launches
+  (via `flutter_secure_storage`) so the user can be restored offline.
+
 ## Run project
 1. **Create an environment file:**  
    Create a file named `env.dev.json` in the root of the project.

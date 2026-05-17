@@ -6,5 +6,4 @@ class AppConstants {
   const AppConstants._();
 
   static const String appName = 'Market App';
-  static const String databaseFileName = 'market_app.db';
 }
