@@ -1,29 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../domain/entities/business.dart';
 import '../../domain/entities/business_status.dart';
-import '../../domain/repositories/business_repository.dart';
-import '../bloc/business_profile_cubit.dart';
 
 class BusinessProfilePage extends StatelessWidget {
-  const BusinessProfilePage({super.key});
+  const BusinessProfilePage({super.key, required this.business});
 
   static const String routeName = '/business-profile';
 
-  @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => BusinessProfileCubit(
-        repository: context.read<BusinessRepository>(),
-      )..initialize(),
-      child: const _BusinessProfileView(),
-    );
-  }
-}
-
-class _BusinessProfileView extends StatelessWidget {
-  const _BusinessProfileView();
+  final Business business;
 
   @override
   Widget build(BuildContext context) {
@@ -35,29 +20,9 @@ class _BusinessProfileView extends StatelessWidget {
           IconButton(onPressed: null, icon: Icon(Icons.favorite_border)),
         ],
       ),
-      body: BlocBuilder<BusinessProfileCubit, BusinessProfileState>(
-        builder: (context, state) {
-          if (state.isLoading && state.businesses.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (state.error != null && state.businesses.isEmpty) {
-            return _ErrorView(message: state.error!);
-          }
-          if (state.businesses.isEmpty) {
-            return const Center(child: Text('No businesses yet'));
-          }
-          return RefreshIndicator(
-            onRefresh: () => context.read<BusinessProfileCubit>().refresh(),
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              itemCount: state.businesses.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (_, index) => _BusinessCard(
-                business: state.businesses[index],
-              ),
-            ),
-          );
-        },
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: _BusinessCard(business: business),
       ),
     );
   }
@@ -169,35 +134,6 @@ class _IconLine extends StatelessWidget {
         const SizedBox(width: 6),
         Expanded(child: Text(text)),
       ],
-    );
-  }
-}
-
-class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 48),
-            const SizedBox(height: 12),
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 12),
-            FilledButton(
-              onPressed: () =>
-                  context.read<BusinessProfileCubit>().refresh(),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

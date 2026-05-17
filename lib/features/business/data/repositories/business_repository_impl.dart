@@ -1,32 +1,50 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:market_app/core/reactive/replay_subject.dart';
-import 'package:market_app/features/business/data/datasources/remote/business_remote_data_source.dart';
-import 'package:market_app/features/business/data/models/business_model.dart';
-import 'package:market_app/features/business/domain/entities/business.dart';
-import 'package:market_app/features/business/domain/entities/business_failure.dart';
-import 'package:market_app/features/business/domain/repositories/business_repository.dart';
+import '../../domain/entities/business.dart';
+import '../../domain/entities/business_failure.dart';
+import '../../domain/repositories/business_repository.dart';
+import '../datasources/remote/business_remote_data_source.dart';
 
 class BusinessRepositoryImpl implements BusinessRepository {
   BusinessRepositoryImpl({required BusinessRemoteDataSource remoteDataSource})
-      : _remoteDataSource = remoteDataSource;
+      : _remote = remoteDataSource;
 
-  final BusinessRemoteDataSource _remoteDataSource;
-  final ReplaySubject<List<BusinessModel>> _cache =
-      ReplaySubject<List<BusinessModel>>(const []);
-
-  @override
-  Stream<List<Business>> watchBusinesses() =>
-      _cache.stream.map((models) => List<Business>.unmodifiable(models));
+  final BusinessRemoteDataSource _remote;
+  final StreamController<List<Business>> _controller =
+      StreamController<List<Business>>.broadcast();
+  List<Business> _cache = const [];
+  bool _initialFetchStarted = false;
 
   @override
-  Future<void> refreshBusinesses() async {
+  Stream<List<Business>> watchBusinesses() {
+    if (!_initialFetchStarted) {
+      _initialFetchStarted = true;
+      // Fire-and-forget initial load; errors propagate through the stream.
+      unawaited(_loadFromRemote());
+    }
+    return _controller.stream;
+  }
+
+  @override
+  Future<void> refreshBusinesses() => _loadFromRemote();
+
+  @override
+  Future<Business?> getBusiness(String id) async {
     try {
-      final remote = await _remoteDataSource.fetchBusinesses();
-      _cache.add(List.unmodifiable(remote));
+      return await _remote.fetchBusinessById(id);
     } catch (error) {
       throw _mapInfraError(error);
+    }
+  }
+
+  Future<void> _loadFromRemote() async {
+    try {
+      final businesses = await _remote.fetchBusinesses();
+      _cache = businesses;
+      _controller.add(_cache);
+    } catch (error) {
+      _controller.addError(_mapInfraError(error));
     }
   }
 

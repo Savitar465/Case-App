@@ -30,6 +30,9 @@ class _FakeBusinessRepository implements BusinessRepository {
 
   @override
   Future<void> refreshBusinesses() async {}
+
+  @override
+  Future<Business?> getBusiness(String id) async => null;
 }
 
 void main() {

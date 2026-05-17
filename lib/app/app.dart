@@ -39,7 +39,6 @@ class App extends StatelessWidget {
         routes: {
           LoginPage.routeName: (_) => const LoginPage(),
           BusinessListPage.routeName: (_) => const BusinessListPage(),
-          BusinessProfilePage.routeName: (_) => const BusinessProfilePage(),
         },
       ),
     );
