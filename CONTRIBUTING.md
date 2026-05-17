@@ -15,8 +15,9 @@ end-to-end before opening your first PR.
 | -------------------- | ------------------------------------------------ |
 | Framework            | Flutter (Dart `^3.9.2`)                          |
 | State management     | `flutter_bloc` (Bloc + Cubit)                    |
-| Local persistence    | `drift` (SQLite) + `flutter_secure_storage`      |
-| Remote backend       | Supabase (`supabase_flutter`)                    |
+| Persistence          | Supabase (`supabase_flutter`) only — remote-only |
+| Session storage      | `flutter_secure_storage` (cached auth session)   |
+| In-session cache     | In-memory + `ReplaySubject` (see `core/reactive`) |
 | Crypto               | `cryptography` (AES-GCM + PBKDF2)                |
 | Value equality       | `equatable`                                      |
 | Identifiers          | `uuid` v4                                        |
@@ -24,6 +25,10 @@ end-to-end before opening your first PR.
 
 We deliberately do **not** use:
 
+- An on-device database (`drift`, `sqflite`, `hive`, `isar`). Supabase is
+  the source of truth; the app keeps a per-session in-memory cache to
+  power reactive streams in the UI. If you find yourself reaching for one,
+  surface the requirement first.
 - Code generation for models (`freezed`, `json_serializable`). Models are
   written by hand — see §4.
 - A DI container (`get_it`, `riverpod`, etc.). Composition happens in
@@ -38,15 +43,15 @@ We deliberately do **not** use:
 ```
 lib/
 ├── app/                       # Root widget, theme, top-level routing
-├── core/                      # Cross-cutting infra (db, crypto, constants)
+├── core/                      # Cross-cutting infra (crypto, constants, reactive)
 │   ├── constants/
-│   ├── database/              # Drift schema + DAOs
+│   ├── reactive/              # ReplaySubject helper (used by local caches)
 │   └── security/              # Credential cipher
 ├── features/                  # One folder per bounded context
 │   └── <feature>/
 │       ├── data/
 │       │   ├── datasources/
-│       │   │   ├── local/     # Drift, secure storage
+│       │   │   ├── local/     # In-memory cache (+ secure storage for auth)
 │       │   │   └── remote/    # Supabase
 │       │   ├── models/        # JSON / DB ↔ entity converters
 │       │   └── repositories/  # Repository implementations
@@ -92,8 +97,9 @@ them are one-liners (`LoginUseCase`, `LogoutUseCase`). That's intentional:
 `main.dart` is the **only** place that:
 
 1. Reads `--dart-define` env vars (Supabase URL/key).
-2. Initializes Supabase, opens the Drift database, builds the cipher.
-3. Constructs concrete data sources, then concrete repositories.
+2. Initializes Supabase and builds the credential cipher.
+3. Constructs concrete data sources (local caches + Supabase-backed remotes),
+   then concrete repositories.
 4. Hands repositories to `App` typed as their **abstract** interface.
 
 Rules:
@@ -142,17 +148,20 @@ Rules:
 
 ### Data sources
 
-- `local/` data sources own a `Drift` `AppDatabase` reference and a cipher if
-  needed. They never know about Supabase.
-- `remote/` data sources own a `SupabaseClient`. They never write to Drift.
+- `local/` data sources keep state in memory (Map + `ReplaySubject` for
+  streams) and use `flutter_secure_storage` only when data has to survive a
+  restart (currently just the cached auth session). They never know about
+  Supabase.
+- `remote/` data sources own a `SupabaseClient`. They never touch the local
+  cache.
 - Data sources throw typed exceptions (`AuthRemoteException`,
   `ProductRemoteException`, …) — not raw `Exception` strings.
 
 ### Models
 
 - A `*Model` either:
-  - **Extends** the domain entity and adds `fromX` / `toCompanion` factories
-    (preferred when the model is a 1:1 representation), **or**
+  - **Extends** the domain entity and adds `fromRemote` / `toRemoteMap`
+    factories (preferred when the model is a 1:1 representation), **or**
   - Is a standalone class with `toEntity()` (when the wire shape differs from
     the entity).
 - Do **not** leak models out of `data/`. Repositories convert to entities
@@ -162,8 +171,9 @@ Rules:
 
 - Implementation lives in `data/repositories/<name>_impl.dart`.
 - Implements the abstract contract from `domain/repositories/`.
-- Owns the offline-first policy: write through local, sync to remote, fall
-  back to cache on failure.
+- Owns the remote-first policy: write to Supabase, update the in-memory
+  cache on success, and refill the cache via `syncProducts` /
+  `syncPendingChanges` as needed.
 - Catches infrastructure errors (`SocketException`, `TimeoutException`,
   `supabase.AuthException`, etc.) and re-throws as the feature's `*Failure`.
 
@@ -242,17 +252,16 @@ when offline), leave a one-line comment explaining why.
 
 ---
 
-## 9. Database & migrations
+## 9. Persistence
 
-- Schema lives in `lib/core/database/app_database.dart`. Add a new table by
-  declaring it, bumping `schemaVersion`, and appending an `if (from < N)`
-  branch in `MigrationStrategy.onUpgrade`.
-- After editing schema or queries, regenerate Drift:
-  ```bash
-  dart run build_runner build --delete-conflicting-outputs
-  ```
-- Migrations are append-only. Never edit a past `if (from < N)` branch — write
-  a new one.
+- Supabase is the only source of truth. Schema changes happen on the Supabase
+  side (SQL migrations / dashboard); there is no local database.
+- The app keeps a per-session in-memory cache inside each local data source
+  so the presentation layer can subscribe to reactive streams. The helper
+  for replay-once streams lives at `lib/core/reactive/replay_subject.dart`.
+- The only thing persisted on-device is the encrypted auth session, stored
+  via `flutter_secure_storage` inside `AuthLocalDataSource`.
+- Do **not** reintroduce Drift/SQLite/Hive/Isar without prior discussion.
 
 ---
 
@@ -284,7 +293,8 @@ Before requesting review:
 - [ ] New repositories have an abstract contract in `domain/`.
 - [ ] New strings shown to the user are not hard-coded debug English (they
       should at minimum read naturally — i18n is on the roadmap).
-- [ ] Migration added if the Drift schema changed.
+- [ ] No new on-device DB dependencies were added (drift, sqflite, hive,
+      isar, …).
 
 PR description should answer: **what changed, why, and how to verify**.
 
@@ -297,7 +307,7 @@ Short, present-tense, scoped to the feature touched:
 ```
 auth: handle offline fallback on Supabase 5xx
 inventory: split transactions section into header + list widgets
-core/db: add synced_at column to inventory_movements
+core: remove Drift; remote-only persistence via Supabase
 ```
 
 No `[skip ci]`, no emoji, no auto-generated AI tool footers.

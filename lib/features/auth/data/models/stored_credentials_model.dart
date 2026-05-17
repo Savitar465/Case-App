@@ -1,13 +1,11 @@
 import 'dart:convert';
 
-import 'package:drift/drift.dart';
-
-import 'package:market_app/core/database/app_database.dart';
 import 'package:market_app/core/security/credential_cipher.dart';
 import 'package:market_app/features/auth/data/models/auth_session_model.dart';
 import 'package:market_app/features/auth/data/models/auth_user_model.dart';
 import 'package:market_app/features/auth/domain/entities/auth_user.dart';
 
+/// Plain-Dart representation of the cached credentials kept in secure storage.
 class StoredCredentialsModel {
   const StoredCredentialsModel({
     required this.userId,
@@ -37,47 +35,55 @@ class StoredCredentialsModel {
   final UserRole role;
   final String? sellerId;
 
-  factory StoredCredentialsModel.fromTable(AuthCredentialsTableData data) {
+  Map<String, dynamic> toJson() => {
+        'user_id': userId,
+        'email': email,
+        'display_name': displayName,
+        'hashed_password': hashedPassword,
+        'password_salt': passwordSalt,
+        'encrypted_access_token': encryptedAccessToken,
+        'encrypted_refresh_token': encryptedRefreshToken,
+        'expires_at': expiresAt,
+        'metadata': metadata,
+        'role': role.label,
+        'seller_id': sellerId,
+        'updated_at': updatedAt.toUtc().toIso8601String(),
+      };
+
+  factory StoredCredentialsModel.fromJson(Map<String, dynamic> map) {
     return StoredCredentialsModel(
-      userId: data.userId,
-      email: data.email,
-      displayName: data.displayName,
-      hashedPassword: data.hashedPassword,
-      passwordSalt: data.passwordSalt,
-      encryptedAccessToken: data.encryptedAccessToken,
-      encryptedRefreshToken: data.encryptedRefreshToken,
-      expiresAt: data.expiresAt,
-      metadata: data.jsonUserMetadata != null
-          ? jsonDecode(data.jsonUserMetadata!) as Map<String, dynamic>
-          : null,
-      updatedAt: data.updatedAt,
-      role: userRoleFromString(data.role),
-      sellerId: data.sellerId,
+      userId: map['user_id'] as String,
+      email: map['email'] as String,
+      displayName: map['display_name'] as String?,
+      hashedPassword: map['hashed_password'] as String,
+      passwordSalt: map['password_salt'] as String,
+      encryptedAccessToken: map['encrypted_access_token'] as String,
+      encryptedRefreshToken: map['encrypted_refresh_token'] as String?,
+      expiresAt: (map['expires_at'] as num?)?.toInt(),
+      metadata: (map['metadata'] as Map?)?.cast<String, dynamic>(),
+      role: userRoleFromString(map['role'] as String?),
+      sellerId: map['seller_id'] as String?,
+      updatedAt:
+          DateTime.tryParse(map['updated_at'] as String? ?? '') ??
+              DateTime.now().toUtc(),
     );
   }
 
-  AuthCredentialsTableCompanion toCompanion({
-    required String hashedPassword,
-    required String passwordSalt,
-    required String encryptedAccessToken,
-    String? encryptedRefreshToken,
-    int? expiresAt,
-    DateTime? updatedAt,
-  }) {
-    return AuthCredentialsTableCompanion(
-      userId: Value(userId),
-      email: Value(email),
-      displayName: Value(displayName),
-      hashedPassword: Value(hashedPassword),
-      passwordSalt: Value(passwordSalt),
-      encryptedAccessToken: Value(encryptedAccessToken),
-      encryptedRefreshToken: Value(encryptedRefreshToken),
-      expiresAt: Value(expiresAt),
-      jsonUserMetadata: Value(metadata != null ? jsonEncode(metadata) : null),
-      role: Value(role.label),
-      sellerId: Value(sellerId),
-      updatedAt: Value(updatedAt ?? DateTime.now()),
-    );
+  String encode() => jsonEncode(toJson());
+
+  static StoredCredentialsModel? decode(String? raw) {
+    if (raw == null || raw.isEmpty) {
+      return null;
+    }
+    try {
+      final map = jsonDecode(raw);
+      if (map is Map<String, dynamic>) {
+        return StoredCredentialsModel.fromJson(map);
+      }
+    } catch (_) {
+      // Corrupted payload — treat as no cached session.
+    }
+    return null;
   }
 
   Future<AuthSessionModel> toSession(CredentialCipher cipher) async {

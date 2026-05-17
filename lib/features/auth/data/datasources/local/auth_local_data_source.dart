@@ -1,22 +1,26 @@
-import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-import 'package:drift/drift.dart';
-
-import 'package:market_app/core/database/app_database.dart';
 import 'package:market_app/core/security/credential_cipher.dart';
 import 'package:market_app/features/auth/data/models/auth_session_model.dart';
 import 'package:market_app/features/auth/data/models/stored_credentials_model.dart';
-import 'package:market_app/features/auth/domain/entities/auth_user.dart';
 
+/// Persists the most-recent authenticated session into secure storage so the
+/// app can restore it on next launch and fall back to a password check when
+/// Supabase is unreachable.
+///
+/// Drift was retired in favor of remote-only persistence; this class keeps the
+/// public API intact but stores a single encrypted JSON blob.
 class AuthLocalDataSource {
   AuthLocalDataSource({
-    required AppDatabase database,
     required CredentialCipher credentialCipher,
-  }) : _database = database,
-       _cipher = credentialCipher;
+    FlutterSecureStorage? secureStorage,
+  })  : _cipher = credentialCipher,
+        _secureStorage = secureStorage ?? const FlutterSecureStorage();
 
-  final AppDatabase _database;
+  static const _storageKey = 'auth_cached_credentials';
+
   final CredentialCipher _cipher;
+  final FlutterSecureStorage _secureStorage;
 
   Future<void> cacheSession({
     required AuthSessionModel session,
@@ -28,46 +32,37 @@ class AuthLocalDataSource {
         ? await _cipher.encrypt(session.refreshToken!)
         : null;
 
-    final companion = AuthCredentialsTableCompanion(
-      userId: Value(session.user.id),
-      email: Value(session.user.email),
-      displayName: Value(session.user.displayName),
-      hashedPassword: Value(hashedPassword.hash),
-      passwordSalt: Value(hashedPassword.salt),
-      encryptedAccessToken: Value(encryptedAccess),
-      encryptedRefreshToken: Value(encryptedRefresh),
-      expiresAt: Value(session.expiresAt?.toUtc().millisecondsSinceEpoch),
-      jsonUserMetadata: Value(
-        session.user.metadata != null
-            ? jsonEncode(session.user.metadata)
-            : null,
-      ),
-      role: Value(session.user.role.label),
-      sellerId: Value(session.user.sellerId),
-      updatedAt: Value(DateTime.now().toUtc()),
+    final stored = StoredCredentialsModel(
+      userId: session.user.id,
+      email: session.user.email,
+      displayName: session.user.displayName,
+      hashedPassword: hashedPassword.hash,
+      passwordSalt: hashedPassword.salt,
+      encryptedAccessToken: encryptedAccess,
+      encryptedRefreshToken: encryptedRefresh,
+      expiresAt: session.expiresAt?.toUtc().millisecondsSinceEpoch,
+      metadata: session.user.metadata,
+      role: session.user.role,
+      sellerId: session.user.sellerId,
+      updatedAt: DateTime.now().toUtc(),
     );
 
-    await _database.saveCredentials(companion);
+    await _secureStorage.write(key: _storageKey, value: stored.encode());
   }
 
   Future<AuthSessionModel?> restoreSession() async {
-    final data = await _database.fetchCachedCredentials();
-    if (data == null) {
-      return null;
-    }
-    final stored = StoredCredentialsModel.fromTable(data);
-    return stored.toSession(_cipher);
+    final stored = await _readStored();
+    return stored?.toSession(_cipher);
   }
 
   Future<AuthSessionModel?> authenticateOffline({
     required String email,
     required String password,
   }) async {
-    final data = await _database.fetchCredentialsByEmail(email);
-    if (data == null) {
+    final stored = await _readStored();
+    if (stored == null || stored.email != email) {
       return null;
     }
-    final stored = StoredCredentialsModel.fromTable(data);
     final matches = await _cipher.verifyPassword(
       password: password,
       expectedHash: stored.hashedPassword,
@@ -80,6 +75,11 @@ class AuthLocalDataSource {
   }
 
   Future<void> clear() {
-    return _database.clearCredentials();
+    return _secureStorage.delete(key: _storageKey);
+  }
+
+  Future<StoredCredentialsModel?> _readStored() async {
+    final raw = await _secureStorage.read(key: _storageKey);
+    return StoredCredentialsModel.decode(raw);
   }
 }

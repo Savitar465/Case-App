@@ -2,46 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:market_app/core/constants/app_constants.dart';
-import 'package:market_app/features/auth/domain/entities/auth_session.dart';
-import 'package:market_app/features/auth/domain/entities/auth_user.dart';
 import 'package:market_app/features/auth/domain/repositories/auth_repository.dart';
 import 'package:market_app/features/auth/domain/usecases/login_use_case.dart';
 import 'package:market_app/features/auth/domain/usecases/logout_use_case.dart';
 import 'package:market_app/features/auth/domain/usecases/restore_session_use_case.dart';
 import 'package:market_app/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:market_app/features/auth/presentation/pages/login_page.dart';
-import 'package:market_app/features/inventory/domain/repositories/inventory_repository.dart';
-import 'package:market_app/features/inventory/presentation/pages/inventory_home_page.dart';
-import 'package:market_app/features/products/domain/repositories/product_repository.dart';
-import 'package:market_app/features/products/presentation/pages/market_home_page.dart';
-import 'package:market_app/features/products/presentation/pages/seller_home_page.dart';
+import 'package:market_app/features/business/presentation/pages/business_list_page.dart';
 
 /// Root widget. Wires the auth-scoped Bloc and the top-level routing.
-///
-/// Repositories are provided at the composition root in `main.dart`; this
-/// widget only depends on them to build the auth use cases consumed by
-/// [AuthBloc].
 class App extends StatelessWidget {
-  App({
-    super.key,
-    required AuthRepository authRepository,
-    required ProductRepository productRepository,
-    required InventoryRepository inventoryRepository,
-  })  : _loginUseCase = LoginUseCase(authRepository),
+  App({super.key, required AuthRepository authRepository})
+      : _loginUseCase = LoginUseCase(authRepository),
         _logoutUseCase = LogoutUseCase(authRepository),
-        _restoreSessionUseCase = RestoreSessionUseCase(authRepository),
-        // Held for symmetry with the composition root; presentation code
-        // resolves these through `context.read<...>()`.
-        _productRepository = productRepository,
-        _inventoryRepository = inventoryRepository;
+        _restoreSessionUseCase = RestoreSessionUseCase(authRepository);
 
   final LoginUseCase _loginUseCase;
   final LogoutUseCase _logoutUseCase;
   final RestoreSessionUseCase _restoreSessionUseCase;
-  // ignore: unused_field
-  final ProductRepository _productRepository;
-  // ignore: unused_field
-  final InventoryRepository _inventoryRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -60,14 +38,13 @@ class App extends StatelessWidget {
         home: const _AuthGate(),
         routes: {
           LoginPage.routeName: (_) => const LoginPage(),
-          MarketHomePage.routeName: (_) => const MarketHomePage(),
+          BusinessListPage.routeName: (_) => const BusinessListPage(),
         },
       ),
     );
   }
 }
 
-/// Reacts to auth state changes and routes to the right top-level screen.
 class _AuthGate extends StatelessWidget {
   const _AuthGate();
 
@@ -75,26 +52,11 @@ class _AuthGate extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) => switch (state) {
-        AuthAuthenticated(:final session) => _HomeForRole(session: session),
+        AuthAuthenticated() => const BusinessListPage(),
         AuthLoading() => const _LoadingScreen(),
         AuthInitial() || AuthError() => const LoginPage(),
       },
     );
-  }
-}
-
-class _HomeForRole extends StatelessWidget {
-  const _HomeForRole({required this.session});
-
-  final AuthSession session;
-
-  @override
-  Widget build(BuildContext context) {
-    return switch (session.user.role) {
-      UserRole.admin => InventoryHomePage(session: session),
-      UserRole.seller => SellerHomePage(session: session),
-      UserRole.customer || UserRole.unknown => const MarketHomePage(),
-    };
   }
 }
 
