@@ -6,6 +6,8 @@ import 'package:market_app/features/auth/domain/entities/auth_session.dart';
 import 'package:market_app/features/auth/domain/entities/auth_user.dart';
 import 'package:market_app/features/auth/domain/repositories/auth_repository.dart';
 import 'package:market_app/features/auth/presentation/pages/login_page.dart';
+import 'package:market_app/features/business_profile/domain/entities/business.dart';
+import 'package:market_app/features/business_profile/domain/repositories/business_repository.dart';
 import 'package:market_app/features/inventory/domain/entities/employee.dart';
 import 'package:market_app/features/inventory/domain/entities/inventory_location.dart';
 import 'package:market_app/features/inventory/domain/entities/inventory_report.dart';
@@ -167,16 +169,29 @@ class _FakeInventoryRepository implements InventoryRepository {
   }
 }
 
+class _FakeBusinessRepository implements BusinessRepository {
+  @override
+  Future<Business?> getBusiness(String id) async => null;
+
+  @override
+  Future<void> refreshBusinesses() async {}
+
+  @override
+  Stream<List<Business>> watchBusinesses() => Stream.value(const []);
+}
+
 void main() {
   testWidgets('Shows Login screen initially', (WidgetTester tester) async {
     final repository = _FakeAuthRepository();
     final productRepository = _FakeProductRepository();
     final inventoryRepository = _FakeInventoryRepository();
+    final businessRepository = _FakeBusinessRepository();
     await tester.pumpWidget(
       App(
         authRepository: repository,
         productRepository: productRepository,
         inventoryRepository: inventoryRepository,
+        businessRepository: businessRepository,
       ),
     );
     await tester.pump();

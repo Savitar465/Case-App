@@ -10,6 +10,8 @@ import 'package:market_app/features/auth/domain/usecases/logout_use_case.dart';
 import 'package:market_app/features/auth/domain/usecases/restore_session_use_case.dart';
 import 'package:market_app/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:market_app/features/auth/presentation/pages/login_page.dart';
+import 'package:market_app/features/business_profile/domain/repositories/business_repository.dart';
+import 'package:market_app/features/business_profile/presentation/pages/business_profile_page.dart';
 import 'package:market_app/features/inventory/domain/repositories/inventory_repository.dart';
 import 'package:market_app/features/inventory/presentation/pages/inventory_home_page.dart';
 import 'package:market_app/features/products/domain/repositories/product_repository.dart';
@@ -27,13 +29,15 @@ class App extends StatelessWidget {
     required AuthRepository authRepository,
     required ProductRepository productRepository,
     required InventoryRepository inventoryRepository,
+    required BusinessRepository businessRepository,
   })  : _loginUseCase = LoginUseCase(authRepository),
         _logoutUseCase = LogoutUseCase(authRepository),
         _restoreSessionUseCase = RestoreSessionUseCase(authRepository),
         // Held for symmetry with the composition root; presentation code
         // resolves these through `context.read<...>()`.
         _productRepository = productRepository,
-        _inventoryRepository = inventoryRepository;
+        _inventoryRepository = inventoryRepository,
+        _businessRepository = businessRepository;
 
   final LoginUseCase _loginUseCase;
   final LogoutUseCase _logoutUseCase;
@@ -42,6 +46,8 @@ class App extends StatelessWidget {
   final ProductRepository _productRepository;
   // ignore: unused_field
   final InventoryRepository _inventoryRepository;
+  // ignore: unused_field
+  final BusinessRepository _businessRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -61,6 +67,7 @@ class App extends StatelessWidget {
         routes: {
           LoginPage.routeName: (_) => const LoginPage(),
           MarketHomePage.routeName: (_) => const MarketHomePage(),
+          BusinessProfilePage.routeName: (_) => const BusinessProfilePage(),
         },
       ),
     );

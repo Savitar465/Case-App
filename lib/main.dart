@@ -6,6 +6,9 @@ import 'app/app.dart';
 import 'core/database/app_database.dart';
 import 'core/security/credential_cipher.dart';
 import 'features/auth/data/datasources/local/auth_local_data_source.dart';
+import 'features/business_profile/data/datasources/remote/business_remote_data_source.dart';
+import 'features/business_profile/data/repositories/business_repository_impl.dart';
+import 'features/business_profile/domain/repositories/business_repository.dart';
 import 'features/auth/data/datasources/remote/auth_remote_data_source.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/auth/domain/repositories/auth_repository.dart';
@@ -65,10 +68,15 @@ _AppDependencies _buildDependencies(SupabaseClient supabase) {
     productRepository: productRepository,
   );
 
+  final businessRepository = BusinessRepositoryImpl(
+    remoteDataSource: BusinessRemoteDataSource(supabase),
+  );
+
   return _AppDependencies(
     authRepository: authRepository,
     productRepository: productRepository,
     inventoryRepository: inventoryRepository,
+    businessRepository: businessRepository,
   );
 }
 
@@ -77,11 +85,13 @@ class _AppDependencies {
     required this.authRepository,
     required this.productRepository,
     required this.inventoryRepository,
+    required this.businessRepository,
   });
 
   final AuthRepository authRepository;
   final ProductRepository productRepository;
   final InventoryRepository inventoryRepository;
+  final BusinessRepository businessRepository;
 }
 
 class _AppRoot extends StatelessWidget {
@@ -102,11 +112,15 @@ class _AppRoot extends StatelessWidget {
         RepositoryProvider<InventoryRepository>.value(
           value: dependencies.inventoryRepository,
         ),
+        RepositoryProvider<BusinessRepository>.value(
+          value: dependencies.businessRepository,
+        ),
       ],
       child: App(
         authRepository: dependencies.authRepository,
         productRepository: dependencies.productRepository,
         inventoryRepository: dependencies.inventoryRepository,
+        businessRepository: dependencies.businessRepository,
       ),
     );
   }
