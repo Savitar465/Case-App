@@ -43,7 +43,9 @@ void main() {
       MultiRepositoryProvider(
         providers: [
           RepositoryProvider<AuthRepository>.value(value: authRepository),
-          RepositoryProvider<BusinessRepository>.value(value: businessRepository),
+          RepositoryProvider<BusinessRepository>.value(
+            value: businessRepository,
+          ),
         ],
         child: App(authRepository: authRepository),
       ),

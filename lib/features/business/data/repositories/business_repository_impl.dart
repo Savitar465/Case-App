@@ -9,11 +9,12 @@ import '../datasources/remote/business_remote_data_source.dart';
 
 class BusinessRepositoryImpl implements BusinessRepository {
   BusinessRepositoryImpl({required BusinessRemoteDataSource remoteDataSource})
-      : _remote = remoteDataSource;
+    : _remote = remoteDataSource;
 
   final BusinessRemoteDataSource _remote;
-  final ReplaySubject<List<Business>> _subject =
-      ReplaySubject<List<Business>>(const []);
+  final ReplaySubject<List<Business>> _subject = ReplaySubject<List<Business>>(
+    const [],
+  );
 
   @override
   Stream<List<Business>> watchBusinesses() => _subject.stream;

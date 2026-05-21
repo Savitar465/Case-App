@@ -11,8 +11,8 @@ part 'business_list_state.dart';
 
 class BusinessListCubit extends Cubit<BusinessListState> {
   BusinessListCubit({required BusinessRepository repository})
-      : _repository = repository,
-        super(const BusinessListState());
+    : _repository = repository,
+      super(const BusinessListState());
 
   final BusinessRepository _repository;
   StreamSubscription<List<Business>>? _subscription;
@@ -21,12 +21,12 @@ class BusinessListCubit extends Cubit<BusinessListState> {
     emit(state.copyWith(isLoading: true, clearError: true));
     await _subscription?.cancel();
     _subscription = _repository.watchBusinesses().listen(
-      (businesses) => emit(
-        state.copyWith(isLoading: false, businesses: businesses),
-      ),
+      (businesses) =>
+          emit(state.copyWith(isLoading: false, businesses: businesses)),
       onError: (Object error, _) {
-        final message =
-            error is BusinessFailure ? error.message : error.toString();
+        final message = error is BusinessFailure
+            ? error.message
+            : error.toString();
         emit(state.copyWith(isLoading: false, error: message));
       },
     );

@@ -15,10 +15,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required LoginUseCase loginUseCase,
     required LogoutUseCase logoutUseCase,
     required RestoreSessionUseCase restoreSessionUseCase,
-  })  : _loginUseCase = loginUseCase,
-        _logoutUseCase = logoutUseCase,
-        _restoreSessionUseCase = restoreSessionUseCase,
-        super(const AuthInitial()) {
+  }) : _loginUseCase = loginUseCase,
+       _logoutUseCase = logoutUseCase,
+       _restoreSessionUseCase = restoreSessionUseCase,
+       super(const AuthInitial()) {
     on<AuthStarted>(_onAuthStarted);
     on<LoginSubmitted>(_onLoginSubmitted);
     on<LogoutRequested>(_onLogoutRequested);
@@ -37,9 +37,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(const AuthLoading());
     try {
       final session = await _restoreSessionUseCase();
-      emit(session != null
-          ? AuthAuthenticated(session: session)
-          : const AuthInitial());
+      emit(
+        session != null
+            ? AuthAuthenticated(session: session)
+            : const AuthInitial(),
+      );
     } catch (_) {
       emit(const AuthInitial());
     }

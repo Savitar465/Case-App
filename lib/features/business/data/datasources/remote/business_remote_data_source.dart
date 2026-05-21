@@ -12,11 +12,13 @@ class BusinessRemoteDataSource {
 
   Future<List<BusinessModel>> fetchBusinesses() async {
     try {
-      final response = await _client
-          .schema(_schema)
-          .from(_table)
-          .select()
-          .order('created_at', ascending: false) as List<dynamic>;
+      final response =
+          await _client
+                  .schema(_schema)
+                  .from(_table)
+                  .select()
+                  .order('created_at', ascending: false)
+              as List<dynamic>;
       return response
           .whereType<Map<String, dynamic>>()
           .map(BusinessModel.fromRemote)

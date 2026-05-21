@@ -12,7 +12,7 @@ import 'package:market_app/features/auth/domain/repositories/auth_repository.dar
 /// itself, so the app never stores credentials on-device.
 class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl({required AuthRemoteDataSource remoteDataSource})
-      : _remoteDataSource = remoteDataSource;
+    : _remoteDataSource = remoteDataSource;
 
   final AuthRemoteDataSource _remoteDataSource;
 

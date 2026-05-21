@@ -16,9 +16,9 @@ class BusinessListPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => BusinessListCubit(
-        repository: context.read<BusinessRepository>(),
-      )..initialize(),
+      create: (context) =>
+          BusinessListCubit(repository: context.read<BusinessRepository>())
+            ..initialize(),
       child: const _BusinessListView(),
     );
   }
