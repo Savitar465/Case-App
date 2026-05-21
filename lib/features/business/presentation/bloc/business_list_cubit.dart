@@ -30,12 +30,14 @@ class BusinessListCubit extends Cubit<BusinessListState> {
         emit(state.copyWith(isLoading: false, error: message));
       },
     );
+    await refresh();
   }
 
   Future<void> refresh() async {
     emit(state.copyWith(isLoading: true, clearError: true));
     try {
       await _repository.refreshBusinesses();
+      emit(state.copyWith(isLoading: false));
     } on BusinessFailure catch (failure) {
       emit(state.copyWith(isLoading: false, error: failure.message));
     } catch (error) {

@@ -47,15 +47,6 @@ class _LoginPageState extends State<LoginPage> {
               ..showSnackBar(SnackBar(content: Text(state.message)));
           }
           if (state is AuthAuthenticated) {
-            if (state.isOffline) {
-              ScaffoldMessenger.of(context)
-                ..clearSnackBars()
-                ..showSnackBar(
-                  const SnackBar(
-                    content: Text('Signed in offline using cached credentials'),
-                  ),
-                );
-            }
             Navigator.of(
               context,
             ).pushReplacementNamed(BusinessListPage.routeName);

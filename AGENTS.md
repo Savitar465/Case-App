@@ -20,9 +20,8 @@ and you should flag the drift.
   per-session in-memory cache (`lib/core/reactive/replay_subject.dart`)
   behind the local data sources so the presentation layer keeps getting
   reactive streams.
-- Secure storage: `flutter_secure_storage` (encrypted cached auth session
-  only).
-- Auth crypto: `cryptography` (AES-GCM + PBKDF2).
+- Session storage: handled by `supabase_flutter` itself. The app does
+  **not** persist any credentials or tokens on-device.
 - Composition root: `lib/main.dart`. **No** DI container.
 - Routing: `MaterialApp.routes` + named pushes. **No** `go_router`.
 - Codegen: **none**. **No** `freezed` / `json_serializable` / Drift.
@@ -151,9 +150,9 @@ Abstract only. No fields, no implementation, no Supabase imports.
 
 ### Data sources
 
-- Local: owns an in-memory cache (Map + `ReplaySubject` for streams) plus
-  `flutter_secure_storage` if it needs persistence across launches (the
-  auth cached session is the only thing that does today). Never knows
+- Local: owns an in-memory cache (Map + `ReplaySubject` for streams).
+  Never persists anything on-device (Supabase auth state is persisted by
+  `supabase_flutter` itself, not by a local data source). Never knows
   about Supabase.
 - Remote: takes `SupabaseClient`. Never touches the local cache.
 - Throw typed exceptions (`FooRemoteException`, `FooLocalException`) — not
@@ -318,7 +317,6 @@ Follow this exact order — do not skip:
 3. **Data**:
    - Models extending entities, with `fromRemote` / `toRemoteMap` factories.
    - Local data source: in-memory cache (Map + `ReplaySubject` for streams).
-     Use `flutter_secure_storage` only if the data must survive a restart.
    - Remote data source on `SupabaseClient`.
    - Repository implementation, with `_mapInfraError`.
 4. **Presentation**:

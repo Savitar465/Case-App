@@ -41,8 +41,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           ? AuthAuthenticated(session: session)
           : const AuthInitial());
     } catch (_) {
-      // A failure to read the cached session should not block the user from
-      // signing in fresh.
       emit(const AuthInitial());
     }
   }

@@ -20,8 +20,6 @@ class AuthAuthenticated extends AuthState {
 
   final AuthSession session;
 
-  bool get isOffline => session.fromCache;
-
   @override
   List<Object?> get props => [session];
 }

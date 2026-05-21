@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import '../../../../core/reactive/replay_subject.dart';
 import '../../domain/entities/business.dart';
 import '../../domain/entities/business_failure.dart';
 import '../../domain/repositories/business_repository.dart';
@@ -11,23 +12,20 @@ class BusinessRepositoryImpl implements BusinessRepository {
       : _remote = remoteDataSource;
 
   final BusinessRemoteDataSource _remote;
-  final StreamController<List<Business>> _controller =
-      StreamController<List<Business>>.broadcast();
-  List<Business> _cache = const [];
-  bool _initialFetchStarted = false;
+  final ReplaySubject<List<Business>> _subject =
+      ReplaySubject<List<Business>>(const []);
 
   @override
-  Stream<List<Business>> watchBusinesses() {
-    if (!_initialFetchStarted) {
-      _initialFetchStarted = true;
-      // Fire-and-forget initial load; errors propagate through the stream.
-      unawaited(_loadFromRemote());
+  Stream<List<Business>> watchBusinesses() => _subject.stream;
+
+  @override
+  Future<void> refreshBusinesses() async {
+    try {
+      _subject.add(await _remote.fetchBusinesses());
+    } catch (error) {
+      throw _mapInfraError(error);
     }
-    return _controller.stream;
   }
-
-  @override
-  Future<void> refreshBusinesses() => _loadFromRemote();
 
   @override
   Future<Business?> getBusiness(String id) async {
@@ -35,16 +33,6 @@ class BusinessRepositoryImpl implements BusinessRepository {
       return await _remote.fetchBusinessById(id);
     } catch (error) {
       throw _mapInfraError(error);
-    }
-  }
-
-  Future<void> _loadFromRemote() async {
-    try {
-      final businesses = await _remote.fetchBusinesses();
-      _cache = businesses;
-      _controller.add(_cache);
-    } catch (error) {
-      _controller.addError(_mapInfraError(error));
     }
   }
 

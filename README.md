@@ -2,23 +2,23 @@
 
 A simple market application scaffold using Flutter, Clean Architecture, and BLoC.
 
-## What’s Included
+## What's Included
 - Clean architecture directory structure (core, app, features).
-- Authentication flow using flutter_bloc.
+- Authentication flow using flutter_bloc, backed by Supabase Auth.
 - Login page with email/password form and basic validation.
-- Market main page (placeholder list of products) with logout.
+- Business list main page (with logout).
 
 ## Persistence
 - Supabase is the **only** source of truth — there is no on-device
-  database (Drift/SQLite was removed).
+  database (Drift/SQLite was removed) and no on-device credential cache.
+- The Supabase auth session is persisted by `supabase_flutter` itself so
+  it can be restored on next launch.
 - Each `local/` data source keeps an in-memory cache (Map +
   `ReplaySubject`) so the UI can stream from it during the session;
   state is rebuilt on launch by repository sync calls.
-- Only the encrypted authentication session is persisted across launches
-  (via `flutter_secure_storage`) so the user can be restored offline.
 
 ## Run project
-1. **Create an environment file:**  
+1. **Create an environment file:**
    Create a file named `env.dev.json` in the root of the project.
 2. **Run flutter**
    With args: --dart-define-from-file=env.dev.json
@@ -31,24 +31,25 @@ lib/
   core/
     constants/
       app_constants.dart    # Global constants
+    reactive/
+      replay_subject.dart   # In-memory cache helper for streams
   features/
     auth/
       data/
-        auth_repository.dart
-      domain/               # (reserved for entities/usecases)
+        datasources/remote/ # Supabase auth client wrapper
+        models/             # Session / user models
+        repositories/       # AuthRepositoryImpl
+      domain/               # Entities, repository contracts, use cases
       presentation/
-        bloc/
-          auth_bloc.dart
-          auth_event.dart
-          auth_state.dart
+        bloc/               # AuthBloc + events + states
         pages/
           login_page.dart
-    market/
-      data/                 # (reserved)
-      domain/               # (reserved)
+    business/
+      data/                 # Supabase remote source + models
+      domain/               # Entities, repository, use cases
       presentation/
+        bloc/
         pages/
-          market_home_page.dart
 ```
 
 ## Run
@@ -58,5 +59,7 @@ lib/
    flutter run
 
 ## Notes
-- The AuthRepository is a fake implementation that accepts any non-empty email and password.
-- State management uses flutter_bloc with an AuthBloc managing login/logout.
+- Authentication is done entirely through Supabase Auth. There is no fake
+  or offline fallback.
+- State management uses flutter_bloc with an AuthBloc managing
+  login/logout.
