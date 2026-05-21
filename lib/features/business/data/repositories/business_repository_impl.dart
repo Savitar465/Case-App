@@ -4,6 +4,7 @@ import 'dart:io';
 import '../../../../core/reactive/replay_subject.dart';
 import '../../domain/entities/business.dart';
 import '../../domain/entities/business_failure.dart';
+import '../../domain/entities/business_image.dart';
 import '../../domain/repositories/business_repository.dart';
 import '../datasources/remote/business_remote_data_source.dart';
 
@@ -32,6 +33,15 @@ class BusinessRepositoryImpl implements BusinessRepository {
   Future<Business?> getBusiness(String id) async {
     try {
       return await _remote.fetchBusinessById(id);
+    } catch (error) {
+      throw _mapInfraError(error);
+    }
+  }
+
+  @override
+  Future<List<BusinessImage>> getBusinessImages(String businessId) async {
+    try {
+      return await _remote.fetchBusinessImages(businessId);
     } catch (error) {
       throw _mapInfraError(error);
     }
