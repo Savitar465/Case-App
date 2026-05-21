@@ -33,8 +33,13 @@ class BusinessRemoteDataSource {
     }
   }
 
-  Future<List<BusinessImageModel>> fetchBusinessImages(String businessId) async {
-    developer.log('fetchBusinessImages start id=$businessId', name: 'BusinessImages');
+  Future<List<BusinessImageModel>> fetchBusinessImages(
+    String businessId,
+  ) async {
+    developer.log(
+      'fetchBusinessImages start id=$businessId',
+      name: 'BusinessImages',
+    );
     try {
       final response =
           await _client
@@ -75,7 +80,9 @@ class BusinessRemoteDataSource {
   BusinessImageModel _resolveImageUrl(BusinessImageModel image) {
     final raw = image.url;
     developer.log('business_images raw url=$raw', name: 'BusinessImages');
-    if (raw.isEmpty || raw.startsWith('http://') || raw.startsWith('https://')) {
+    if (raw.isEmpty ||
+        raw.startsWith('http://') ||
+        raw.startsWith('https://')) {
       return image;
     }
     final resolved = _client.storage.from(_imagesBucket).getPublicUrl(raw);

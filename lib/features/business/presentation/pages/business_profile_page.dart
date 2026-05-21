@@ -221,9 +221,7 @@ class _PageDots extends StatelessWidget {
           decoration: BoxDecoration(
             color: active ? Colors.white : Colors.white70,
             borderRadius: BorderRadius.circular(3),
-            boxShadow: const [
-              BoxShadow(color: Colors.black26, blurRadius: 2),
-            ],
+            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 2)],
           ),
         );
       }),
