@@ -3,26 +3,18 @@ import 'dart:io';
 
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
-import 'package:market_app/features/auth/data/datasources/local/auth_local_data_source.dart';
 import 'package:market_app/features/auth/data/datasources/remote/auth_remote_data_source.dart';
 import 'package:market_app/features/auth/domain/entities/auth_failure.dart';
 import 'package:market_app/features/auth/domain/entities/auth_session.dart';
 import 'package:market_app/features/auth/domain/repositories/auth_repository.dart';
 
-/// Online-first auth repository with an offline fallback.
-///
-/// On `login`, we always try Supabase first. Any infrastructure error
-/// (network, timeout, Supabase 5xx, malformed response) falls back to a
-/// password check against the locally-cached, encrypted credentials.
+/// Supabase-only auth repository. Sessions are persisted by `supabase_flutter`
+/// itself, so the app never stores credentials on-device.
 class AuthRepositoryImpl implements AuthRepository {
-  AuthRepositoryImpl({
-    required AuthRemoteDataSource remoteDataSource,
-    required AuthLocalDataSource localDataSource,
-  })  : _remoteDataSource = remoteDataSource,
-        _localDataSource = localDataSource;
+  AuthRepositoryImpl({required AuthRemoteDataSource remoteDataSource})
+    : _remoteDataSource = remoteDataSource;
 
   final AuthRemoteDataSource _remoteDataSource;
-  final AuthLocalDataSource _localDataSource;
 
   @override
   Future<AuthSession> login({
@@ -30,48 +22,33 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
   }) async {
     try {
-      final session = await _remoteDataSource.signInWithPassword(
+      return await _remoteDataSource.signInWithPassword(
         email: email,
         password: password,
       );
-      await _localDataSource.cacheSession(session: session, password: password);
-      return session;
     } catch (error) {
-      return _handleOfflineFallback(
-        email: email,
-        password: password,
-        reason: _describeLoginError(error),
-      );
+      throw AuthFailure(_describeLoginError(error));
     }
   }
 
   @override
-  Future<AuthSession?> restoreSession() => _localDataSource.restoreSession();
+  Future<AuthSession?> restoreSession() async {
+    try {
+      return await _remoteDataSource.currentSession();
+    } catch (_) {
+      // A failure to read the current session should not block fresh login.
+      return null;
+    }
+  }
 
   @override
   Future<void> logout() async {
     try {
       await _remoteDataSource.signOut();
     } catch (_) {
-      // Network failure during sign-out is non-fatal; the local cache is the
-      // source of truth for the next start-up and we clear it below.
+      // Network failure during sign-out is non-fatal; the local Supabase
+      // client has already cleared its in-memory session.
     }
-    await _localDataSource.clear();
-  }
-
-  Future<AuthSession> _handleOfflineFallback({
-    required String email,
-    required String password,
-    required String reason,
-  }) async {
-    final cached = await _localDataSource.authenticateOffline(
-      email: email,
-      password: password,
-    );
-    if (cached != null) {
-      return cached;
-    }
-    throw AuthFailure(reason);
   }
 
   String _describeLoginError(Object error) {

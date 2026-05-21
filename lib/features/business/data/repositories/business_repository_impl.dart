@@ -1,30 +1,47 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:market_app/core/reactive/replay_subject.dart';
-import 'package:market_app/features/business/data/datasources/remote/business_remote_data_source.dart';
-import 'package:market_app/features/business/data/models/business_model.dart';
-import 'package:market_app/features/business/domain/entities/business.dart';
-import 'package:market_app/features/business/domain/entities/business_failure.dart';
-import 'package:market_app/features/business/domain/repositories/business_repository.dart';
+import '../../../../core/reactive/replay_subject.dart';
+import '../../domain/entities/business.dart';
+import '../../domain/entities/business_failure.dart';
+import '../../domain/entities/business_image.dart';
+import '../../domain/repositories/business_repository.dart';
+import '../datasources/remote/business_remote_data_source.dart';
 
 class BusinessRepositoryImpl implements BusinessRepository {
   BusinessRepositoryImpl({required BusinessRemoteDataSource remoteDataSource})
-      : _remoteDataSource = remoteDataSource;
+    : _remote = remoteDataSource;
 
-  final BusinessRemoteDataSource _remoteDataSource;
-  final ReplaySubject<List<BusinessModel>> _cache =
-      ReplaySubject<List<BusinessModel>>(const []);
+  final BusinessRemoteDataSource _remote;
+  final ReplaySubject<List<Business>> _subject = ReplaySubject<List<Business>>(
+    const [],
+  );
 
   @override
-  Stream<List<Business>> watchBusinesses() =>
-      _cache.stream.map((models) => List<Business>.unmodifiable(models));
+  Stream<List<Business>> watchBusinesses() => _subject.stream;
 
   @override
   Future<void> refreshBusinesses() async {
     try {
-      final remote = await _remoteDataSource.fetchBusinesses();
-      _cache.add(List.unmodifiable(remote));
+      _subject.add(await _remote.fetchBusinesses());
+    } catch (error) {
+      throw _mapInfraError(error);
+    }
+  }
+
+  @override
+  Future<Business?> getBusiness(String id) async {
+    try {
+      return await _remote.fetchBusinessById(id);
+    } catch (error) {
+      throw _mapInfraError(error);
+    }
+  }
+
+  @override
+  Future<List<BusinessImage>> getBusinessImages(String businessId) async {
+    try {
+      return await _remote.fetchBusinessImages(businessId);
     } catch (error) {
       throw _mapInfraError(error);
     }

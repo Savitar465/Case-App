@@ -3,8 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app/app.dart';
-import 'core/security/credential_cipher.dart';
-import 'features/auth/data/datasources/local/auth_local_data_source.dart';
 import 'features/auth/data/datasources/remote/auth_remote_data_source.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/auth/domain/repositories/auth_repository.dart';
@@ -37,11 +35,8 @@ Future<SupabaseClient> _initializeSupabase() async {
 }
 
 _AppDependencies _buildDependencies(SupabaseClient supabase) {
-  final cipher = CredentialCipher();
-
   final authRepository = AuthRepositoryImpl(
     remoteDataSource: AuthRemoteDataSource(supabase),
-    localDataSource: AuthLocalDataSource(credentialCipher: cipher),
   );
 
   final businessRepository = BusinessRepositoryImpl(

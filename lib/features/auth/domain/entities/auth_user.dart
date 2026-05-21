@@ -31,11 +31,11 @@ UserRole userRoleFromString(String? value) {
 
 extension UserRoleX on UserRole {
   String get label => switch (this) {
-        UserRole.admin => 'admin',
-        UserRole.seller => 'seller',
-        UserRole.customer => 'user',
-        UserRole.unknown => 'unknown',
-      };
+    UserRole.admin => 'admin',
+    UserRole.seller => 'seller',
+    UserRole.customer => 'user',
+    UserRole.unknown => 'unknown',
+  };
 
   bool get canManageCatalog =>
       this == UserRole.admin || this == UserRole.seller;

@@ -5,5 +5,5 @@
 class AppConstants {
   const AppConstants._();
 
-  static const String appName = 'Market App';
+  static const String appName = 'vikus app';
 }

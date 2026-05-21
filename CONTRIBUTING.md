@@ -16,9 +16,8 @@ end-to-end before opening your first PR.
 | Framework            | Flutter (Dart `^3.9.2`)                          |
 | State management     | `flutter_bloc` (Bloc + Cubit)                    |
 | Persistence          | Supabase (`supabase_flutter`) only — remote-only |
-| Session storage      | `flutter_secure_storage` (cached auth session)   |
+| Session storage      | `supabase_flutter` (built-in session persistence)|
 | In-session cache     | In-memory + `ReplaySubject` (see `core/reactive`) |
-| Crypto               | `cryptography` (AES-GCM + PBKDF2)                |
 | Value equality       | `equatable`                                      |
 | Identifiers          | `uuid` v4                                        |
 | Linting              | `flutter_lints`                                  |
@@ -43,15 +42,14 @@ We deliberately do **not** use:
 ```
 lib/
 ├── app/                       # Root widget, theme, top-level routing
-├── core/                      # Cross-cutting infra (crypto, constants, reactive)
+├── core/                      # Cross-cutting infra (constants, reactive)
 │   ├── constants/
-│   ├── reactive/              # ReplaySubject helper (used by local caches)
-│   └── security/              # Credential cipher
+│   └── reactive/              # ReplaySubject helper (used by local caches)
 ├── features/                  # One folder per bounded context
 │   └── <feature>/
 │       ├── data/
 │       │   ├── datasources/
-│       │   │   ├── local/     # In-memory cache (+ secure storage for auth)
+│       │   │   ├── local/     # In-memory cache
 │       │   │   └── remote/    # Supabase
 │       │   ├── models/        # JSON / DB ↔ entity converters
 │       │   └── repositories/  # Repository implementations
@@ -97,7 +95,7 @@ them are one-liners (`LoginUseCase`, `LogoutUseCase`). That's intentional:
 `main.dart` is the **only** place that:
 
 1. Reads `--dart-define` env vars (Supabase URL/key).
-2. Initializes Supabase and builds the credential cipher.
+2. Initializes Supabase.
 3. Constructs concrete data sources (local caches + Supabase-backed remotes),
    then concrete repositories.
 4. Hands repositories to `App` typed as their **abstract** interface.
@@ -149,9 +147,9 @@ Rules:
 ### Data sources
 
 - `local/` data sources keep state in memory (Map + `ReplaySubject` for
-  streams) and use `flutter_secure_storage` only when data has to survive a
-  restart (currently just the cached auth session). They never know about
-  Supabase.
+  streams). They never know about Supabase and never persist anything
+  on-device — the only persisted auth state is managed by
+  `supabase_flutter` itself.
 - `remote/` data sources own a `SupabaseClient`. They never touch the local
   cache.
 - Data sources throw typed exceptions (`AuthRemoteException`,
@@ -259,8 +257,9 @@ when offline), leave a one-line comment explaining why.
 - The app keeps a per-session in-memory cache inside each local data source
   so the presentation layer can subscribe to reactive streams. The helper
   for replay-once streams lives at `lib/core/reactive/replay_subject.dart`.
-- The only thing persisted on-device is the encrypted auth session, stored
-  via `flutter_secure_storage` inside `AuthLocalDataSource`.
+- The only thing persisted on-device is the Supabase auth session,
+  managed by `supabase_flutter` itself. The app does not write
+  credentials or tokens anywhere else.
 - Do **not** reintroduce Drift/SQLite/Hive/Isar without prior discussion.
 
 ---
@@ -275,8 +274,8 @@ when offline), leave a one-line comment explaining why.
     --dart-define=SUPABASE_URL=... \
     --dart-define=SUPABASE_ANON_KEY=...
   ```
-- The encryption key for cached credentials is generated on first launch and
-  stored in `flutter_secure_storage`. Never persist it elsewhere.
+- The Supabase session is persisted by `supabase_flutter` itself. The
+  app does not implement its own credential storage.
 
 ---
 

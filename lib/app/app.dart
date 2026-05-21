@@ -13,9 +13,9 @@ import 'package:market_app/features/business/presentation/pages/business_list_pa
 /// Root widget. Wires the auth-scoped Bloc and the top-level routing.
 class App extends StatelessWidget {
   App({super.key, required AuthRepository authRepository})
-      : _loginUseCase = LoginUseCase(authRepository),
-        _logoutUseCase = LogoutUseCase(authRepository),
-        _restoreSessionUseCase = RestoreSessionUseCase(authRepository);
+    : _loginUseCase = LoginUseCase(authRepository),
+      _logoutUseCase = LogoutUseCase(authRepository),
+      _restoreSessionUseCase = RestoreSessionUseCase(authRepository);
 
   final LoginUseCase _loginUseCase;
   final LogoutUseCase _logoutUseCase;

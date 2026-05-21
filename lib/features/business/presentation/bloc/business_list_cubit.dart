@@ -1,35 +1,34 @@
 import 'dart:async';
 
-import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:market_app/features/business/domain/entities/business.dart';
-import 'package:market_app/features/business/domain/entities/business_failure.dart';
-import 'package:market_app/features/business/domain/usecases/refresh_businesses_use_case.dart';
-import 'package:market_app/features/business/domain/usecases/watch_businesses_use_case.dart';
+import '../../domain/entities/business.dart';
+import '../../domain/entities/business_failure.dart';
+import '../../domain/repositories/business_repository.dart';
 
 part 'business_list_state.dart';
 
 class BusinessListCubit extends Cubit<BusinessListState> {
-  BusinessListCubit({
-    required WatchBusinessesUseCase watchBusinesses,
-    required RefreshBusinessesUseCase refreshBusinesses,
-  })  : _watchBusinesses = watchBusinesses,
-        _refreshBusinesses = refreshBusinesses,
-        super(const BusinessListState());
+  BusinessListCubit({required BusinessRepository repository})
+    : _repository = repository,
+      super(const BusinessListState());
 
-  final WatchBusinessesUseCase _watchBusinesses;
-  final RefreshBusinessesUseCase _refreshBusinesses;
+  final BusinessRepository _repository;
   StreamSubscription<List<Business>>? _subscription;
 
   Future<void> initialize() async {
     emit(state.copyWith(isLoading: true, clearError: true));
-    _subscription?.cancel();
-    _subscription = _watchBusinesses().listen(
-      (businesses) => emit(state.copyWith(businesses: businesses)),
-      onError: (error, _) => emit(
-        state.copyWith(isLoading: false, error: error.toString()),
-      ),
+    await _subscription?.cancel();
+    _subscription = _repository.watchBusinesses().listen(
+      (businesses) =>
+          emit(state.copyWith(isLoading: false, businesses: businesses)),
+      onError: (Object error, _) {
+        final message = error is BusinessFailure
+            ? error.message
+            : error.toString();
+        emit(state.copyWith(isLoading: false, error: message));
+      },
     );
     await refresh();
   }
@@ -37,7 +36,7 @@ class BusinessListCubit extends Cubit<BusinessListState> {
   Future<void> refresh() async {
     emit(state.copyWith(isLoading: true, clearError: true));
     try {
-      await _refreshBusinesses();
+      await _repository.refreshBusinesses();
       emit(state.copyWith(isLoading: false));
     } on BusinessFailure catch (failure) {
       emit(state.copyWith(isLoading: false, error: failure.message));

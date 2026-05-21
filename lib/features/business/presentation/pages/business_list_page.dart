@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:market_app/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:market_app/features/business/domain/entities/business.dart';
-import 'package:market_app/features/business/domain/repositories/business_repository.dart';
-import 'package:market_app/features/business/domain/usecases/refresh_businesses_use_case.dart';
-import 'package:market_app/features/business/domain/usecases/watch_businesses_use_case.dart';
-import 'package:market_app/features/business/presentation/bloc/business_list_cubit.dart';
+
+import '../../domain/entities/business.dart';
+import '../../domain/repositories/business_repository.dart';
+import '../bloc/business_list_cubit.dart';
+import 'business_profile_page.dart';
 
 class BusinessListPage extends StatelessWidget {
   const BusinessListPage({super.key});
@@ -15,12 +15,10 @@ class BusinessListPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final repository = context.read<BusinessRepository>();
     return BlocProvider(
-      create: (_) => BusinessListCubit(
-        watchBusinesses: WatchBusinessesUseCase(repository),
-        refreshBusinesses: RefreshBusinessesUseCase(repository),
-      )..initialize(),
+      create: (context) =>
+          BusinessListCubit(repository: context.read<BusinessRepository>())
+            ..initialize(),
       child: const _BusinessListView(),
     );
   }
@@ -82,11 +80,9 @@ class _BusinessTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       leading: CircleAvatar(
-        backgroundImage:
-            business.logoUrl != null ? NetworkImage(business.logoUrl!) : null,
-        child: business.logoUrl == null
-            ? Text(business.name.isNotEmpty ? business.name[0].toUpperCase() : '?')
-            : null,
+        child: Text(
+          business.name.isNotEmpty ? business.name[0].toUpperCase() : '?',
+        ),
       ),
       title: Text(business.name),
       subtitle: business.description != null
@@ -95,11 +91,17 @@ class _BusinessTile extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             )
-          : null,
+          : Text(
+              business.address,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
       trailing: const Icon(Icons.chevron_right),
       onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Perfil de "${business.name}" próximamente')),
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => BusinessProfilePage(business: business),
+          ),
         );
       },
     );

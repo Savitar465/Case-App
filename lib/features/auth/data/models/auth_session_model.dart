@@ -8,17 +8,14 @@ class AuthSessionModel extends AuthSession {
     required super.accessToken,
     super.refreshToken,
     super.expiresAt,
-    super.fromCache = false,
   }) : super(user: user);
 
   factory AuthSessionModel.fromSupabase(supabase.Session session) {
-    final user = session.user;
     return AuthSessionModel(
-      user: AuthUserModel.fromSupabase(user),
+      user: AuthUserModel.fromSupabase(session.user),
       accessToken: session.accessToken,
       refreshToken: session.refreshToken,
       expiresAt: _resolveExpiration(session),
-      fromCache: false,
     );
   }
 
@@ -29,14 +26,12 @@ class AuthSessionModel extends AuthSession {
     String? accessToken,
     String? refreshToken,
     DateTime? expiresAt,
-    bool? fromCache,
   }) {
     return AuthSessionModel(
       user: user ?? userModel,
       accessToken: accessToken ?? this.accessToken,
       refreshToken: refreshToken ?? this.refreshToken,
       expiresAt: expiresAt ?? this.expiresAt,
-      fromCache: fromCache ?? this.fromCache,
     );
   }
 
