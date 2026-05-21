@@ -7,6 +7,7 @@ import 'package:market_app/features/auth/domain/entities/auth_user.dart';
 import 'package:market_app/features/auth/domain/repositories/auth_repository.dart';
 import 'package:market_app/features/auth/presentation/pages/login_page.dart';
 import 'package:market_app/features/business/domain/entities/business.dart';
+import 'package:market_app/features/business/domain/entities/business_image.dart';
 import 'package:market_app/features/business/domain/repositories/business_repository.dart';
 
 class _FakeAuthRepository implements AuthRepository {
@@ -33,6 +34,10 @@ class _FakeBusinessRepository implements BusinessRepository {
 
   @override
   Future<Business?> getBusiness(String id) async => null;
+
+  @override
+  Future<List<BusinessImage>> getBusinessImages(String businessId) async =>
+      const [];
 }
 
 void main() {
