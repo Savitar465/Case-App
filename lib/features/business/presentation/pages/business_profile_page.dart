@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/widgets/full_screen_image_viewer.dart';
 import '../../../items/presentation/widgets/business_items_section.dart';
 import '../../domain/entities/business.dart';
 import '../../domain/entities/business_image.dart';
@@ -140,6 +141,18 @@ class _BusinessImagesState extends State<_BusinessImages> {
     super.dispose();
   }
 
+  void _openFullScreen(
+    BuildContext context,
+    List<BusinessImage> images,
+    int initialIndex,
+  ) {
+    FullScreenImageViewer.open(
+      context,
+      imageUrls: images.map((image) => image.url).toList(),
+      initialIndex: initialIndex,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<BusinessImage>>(
@@ -166,22 +179,25 @@ class _BusinessImagesState extends State<_BusinessImages> {
                   onPageChanged: (i) => setState(() => _currentPage = i),
                   itemBuilder: (_, index) {
                     final url = images[index].url;
-                    return Image.network(
-                      url,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, error, __) {
-                        debugPrint('Image load failed: $url\nError: $error');
-                        return _ImagePlaceholder(
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: Text(
-                              'Failed: $url\n$error',
-                              style: const TextStyle(fontSize: 10),
-                              textAlign: TextAlign.center,
+                    return GestureDetector(
+                      onTap: () => _openFullScreen(context, images, index),
+                      child: Image.network(
+                        url,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, error, __) {
+                          debugPrint('Image load failed: $url\nError: $error');
+                          return _ImagePlaceholder(
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Text(
+                                'Failed: $url\n$error',
+                                style: const TextStyle(fontSize: 10),
+                                textAlign: TextAlign.center,
+                              ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     );
                   },
                 ),
