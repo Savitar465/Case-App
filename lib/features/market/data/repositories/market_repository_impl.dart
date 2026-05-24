@@ -9,9 +9,8 @@ import 'package:market_app/features/market/domain/entities/market_failure.dart';
 import 'package:market_app/features/market/domain/repositories/market_repository.dart';
 
 class MarketRepositoryImpl implements MarketRepository {
-  MarketRepositoryImpl({
-    required MarketRemoteDataSource remoteDataSource,
-  }) : _remote = remoteDataSource;
+  MarketRepositoryImpl({required MarketRemoteDataSource remoteDataSource})
+    : _remote = remoteDataSource;
 
   final MarketRemoteDataSource _remote;
 
@@ -31,17 +30,27 @@ class MarketRepositoryImpl implements MarketRepository {
     try {
       // Cargamos categorías primero
       final categories = await _remote.getCategories();
-      developer.log('MarketRepository: Emitting ${categories.length} categories', name: 'market.data');
+      developer.log(
+        'MarketRepository: Emitting ${categories.length} categories',
+        name: 'market.data',
+      );
       _categoriesSubject.add(categories);
 
       // Luego negocios
       final businesses = await _remote.getBusinesses();
-      developer.log('MarketRepository: Emitting ${businesses.length} businesses', name: 'market.data');
+      developer.log(
+        'MarketRepository: Emitting ${businesses.length} businesses',
+        name: 'market.data',
+      );
       _businessesSubject.add(businesses);
 
       developer.log('MarketRepository: Refresh completed', name: 'market.data');
     } catch (e) {
-      developer.log('MarketRepository: Error fetching remote data', name: 'market.data', error: e);
+      developer.log(
+        'MarketRepository: Error fetching remote data',
+        name: 'market.data',
+        error: e,
+      );
       throw _mapInfraError(e);
     }
   }
@@ -49,8 +58,10 @@ class MarketRepositoryImpl implements MarketRepository {
   MarketFailure _mapInfraError(Object error) {
     if (error is MarketFailure) return error;
     if (error is MarketRemoteException) return MarketFailure(error.message);
-    if (error is SocketException) return const MarketFailure('No hay conexión a internet');
-    if (error is TimeoutException) return const MarketFailure('La solicitud ha tardado demasiado');
+    if (error is SocketException)
+      return const MarketFailure('No hay conexión a internet');
+    if (error is TimeoutException)
+      return const MarketFailure('La solicitud ha tardado demasiado');
     return MarketFailure(error.toString());
   }
 }

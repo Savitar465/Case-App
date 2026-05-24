@@ -41,7 +41,10 @@ Future<SupabaseClient> _initializeSupabase() async {
   }
 
   // Sanitizamos la URL: eliminamos espacios, barras finales y el sufijo /rest/v1 si existe
-  final url = rawUrl.trim().replaceAll(RegExp(r'/rest/v1/?$'), '').replaceAll(RegExp(r'/$'), '');
+  final url = rawUrl
+      .trim()
+      .replaceAll(RegExp(r'/rest/v1/?$'), '')
+      .replaceAll(RegExp(r'/$'), '');
 
   await Supabase.initialize(url: url, anonKey: anonKey);
   return Supabase.instance.client;

@@ -20,9 +20,9 @@ class _MarketHomePageState extends State<MarketHomePage> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => MarketCubit(
-        repository: context.read<MarketRepository>(),
-      )..initialize(),
+      create: (context) =>
+          MarketCubit(repository: context.read<MarketRepository>())
+            ..initialize(),
       child: Scaffold(
         body: IndexedStack(
           index: _selectedIndex,
@@ -38,9 +38,21 @@ class _MarketHomePageState extends State<MarketHomePage> {
           type: BottomNavigationBarType.fixed,
           selectedItemColor: Theme.of(context).primaryColor,
           items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.favorite_outline), activeIcon: Icon(Icons.favorite), label: 'Favoritos'),
-            BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Perfil'),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined),
+              activeIcon: Icon(Icons.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.favorite_outline),
+              activeIcon: Icon(Icons.favorite),
+              label: 'Favoritos',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              activeIcon: Icon(Icons.person),
+              label: 'Perfil',
+            ),
           ],
         ),
       ),
@@ -61,26 +73,41 @@ class _HomeView extends StatelessWidget {
             // 1. Barra superior: Ubicación y Notificaciones
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Ubicación actual', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                        Text(
+                          'Ubicación actual',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
                         Row(
                           children: [
-                            Icon(Icons.location_on, color: Colors.red, size: 18),
+                            Icon(
+                              Icons.location_on,
+                              color: Colors.red,
+                              size: 18,
+                            ),
                             SizedBox(width: 4),
-                            Text('Tu Ciudad, Calle 123', style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text(
+                              'Tu Ciudad, Calle 123',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
                           ],
                         ),
                       ],
                     ),
                     IconButton(
                       onPressed: () {},
-                      icon: const Badge(child: Icon(Icons.notifications_none_outlined)),
+                      icon: const Badge(
+                        child: Icon(Icons.notifications_none_outlined),
+                      ),
                     ),
                   ],
                 ),
@@ -89,7 +116,10 @@ class _HomeView extends StatelessWidget {
             // 2. Buscador (Visual)
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: SearchBar(
                   hintText: 'Buscar negocios o productos...',
                   leading: const Icon(Icons.search, color: Colors.grey),
@@ -109,7 +139,8 @@ class _HomeView extends StatelessWidget {
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       itemCount: state.categories.length,
-                      itemBuilder: (context, index) => _CategoryItem(category: state.categories[index]),
+                      itemBuilder: (context, index) =>
+                          _CategoryItem(category: state.categories[index]),
                     ),
                   );
                 },
@@ -119,7 +150,10 @@ class _HomeView extends StatelessWidget {
             const SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(16, 24, 16, 12),
-                child: Text('Ofertas destacadas', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                child: Text(
+                  'Ofertas destacadas',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
             SliverToBoxAdapter(
@@ -145,19 +179,25 @@ class _HomeView extends StatelessWidget {
             const SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(16, 24, 16, 12),
-                child: Text('Negocios cercanos', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                child: Text(
+                  'Negocios cercanos',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
             BlocBuilder<MarketCubit, MarketState>(
               builder: (context, state) {
                 if (state.isLoading && state.businesses.isEmpty) {
-                  return const SliverFillRemaining(child: Center(child: CircularProgressIndicator()));
+                  return const SliverFillRemaining(
+                    child: Center(child: CircularProgressIndicator()),
+                  );
                 }
                 return SliverPadding(
                   padding: const EdgeInsets.only(bottom: 16),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
-                      (context, index) => _BusinessTile(business: state.businesses[index]),
+                      (context, index) =>
+                          _BusinessTile(business: state.businesses[index]),
                       childCount: state.businesses.length,
                     ),
                   ),
@@ -201,8 +241,13 @@ class _CategoryItem extends StatelessWidget {
 
     try {
       // Si el string viene con "0x", eliminamos los primeros dos caracteres
-      final cleanHex = iconHex.startsWith('0x') ? iconHex.substring(2) : iconHex;
-      return IconData(int.parse(cleanHex, radix: 16), fontFamily: 'MaterialIcons');
+      final cleanHex = iconHex.startsWith('0x')
+          ? iconHex.substring(2)
+          : iconHex;
+      return IconData(
+        int.parse(cleanHex, radix: 16),
+        fontFamily: 'MaterialIcons',
+      );
     } catch (e) {
       // Si el formato es inválido (ej: "restaurant"), devolvemos icono por defecto
       return Icons.store_outlined;
@@ -217,8 +262,15 @@ class _BusinessTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       leading: const CircleAvatar(child: Icon(Icons.business)),
-      title: Text(business.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-      subtitle: Text(business.address, maxLines: 1, overflow: TextOverflow.ellipsis),
+      title: Text(
+        business.name,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      subtitle: Text(
+        business.address,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
       trailing: const Icon(Icons.chevron_right, size: 18),
     );
   }

@@ -31,17 +31,17 @@ class Business extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        name,
-        address,
-        description,
-        phone,
-        isPro,
-        isFeatured,
-        status,
-        viewsCount,
-        imageUrl,
-        createdAt,
-        updatedAt,
-      ];
+    id,
+    name,
+    address,
+    description,
+    phone,
+    isPro,
+    isFeatured,
+    status,
+    viewsCount,
+    imageUrl,
+    createdAt,
+    updatedAt,
+  ];
 }

@@ -10,8 +10,8 @@ part 'market_state.dart';
 
 class MarketCubit extends Cubit<MarketState> {
   MarketCubit({required MarketRepository repository})
-      : _repository = repository,
-        super(const MarketState());
+    : _repository = repository,
+      super(const MarketState());
 
   final MarketRepository _repository;
   StreamSubscription? _catSub;
@@ -20,18 +20,20 @@ class MarketCubit extends Cubit<MarketState> {
   void initialize() {
     debugPrint('MarketCubit: initialize() called');
     emit(state.copyWith(isLoading: true, clearError: true));
-    
+
     _catSub = _repository.watchCategories().listen(
       (cats) {
         debugPrint('MarketCubit: Received ${cats.length} categories');
         emit(state.copyWith(categories: cats, isLoading: false));
       },
-      onError: (e) => emit(state.copyWith(isLoading: false, error: e.toString())),
+      onError: (e) =>
+          emit(state.copyWith(isLoading: false, error: e.toString())),
     );
-    
+
     _bizSub = _repository.watchBusinesses().listen(
       (biz) => emit(state.copyWith(businesses: biz, isLoading: false)),
-      onError: (e) => emit(state.copyWith(isLoading: false, error: e.toString())),
+      onError: (e) =>
+          emit(state.copyWith(isLoading: false, error: e.toString())),
     );
 
     refresh();
