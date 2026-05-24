@@ -9,6 +9,9 @@ import 'features/auth/domain/repositories/auth_repository.dart';
 import 'features/business/data/datasources/remote/business_remote_data_source.dart';
 import 'features/business/data/repositories/business_repository_impl.dart';
 import 'features/business/domain/repositories/business_repository.dart';
+import 'features/items/data/datasources/remote/item_remote_data_source.dart';
+import 'features/items/data/repositories/item_repository_impl.dart';
+import 'features/items/domain/repositories/item_repository.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,9 +46,14 @@ _AppDependencies _buildDependencies(SupabaseClient supabase) {
     remoteDataSource: BusinessRemoteDataSource(supabase),
   );
 
+  final itemRepository = ItemRepositoryImpl(
+    remoteDataSource: ItemRemoteDataSource(supabase),
+  );
+
   return _AppDependencies(
     authRepository: authRepository,
     businessRepository: businessRepository,
+    itemRepository: itemRepository,
   );
 }
 
@@ -53,10 +61,12 @@ class _AppDependencies {
   const _AppDependencies({
     required this.authRepository,
     required this.businessRepository,
+    required this.itemRepository,
   });
 
   final AuthRepository authRepository;
   final BusinessRepository businessRepository;
+  final ItemRepository itemRepository;
 }
 
 class _AppRoot extends StatelessWidget {
@@ -73,6 +83,9 @@ class _AppRoot extends StatelessWidget {
         ),
         RepositoryProvider<BusinessRepository>.value(
           value: dependencies.businessRepository,
+        ),
+        RepositoryProvider<ItemRepository>.value(
+          value: dependencies.itemRepository,
         ),
       ],
       child: App(authRepository: dependencies.authRepository),
