@@ -2,18 +2,63 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/widgets/full_screen_image_viewer.dart';
+import '../../../items/domain/repositories/item_repository.dart';
+import '../../../items/presentation/bloc/item_list_cubit.dart';
 import '../../../items/presentation/widgets/business_items_section.dart';
 import '../../domain/entities/business.dart';
 import '../../domain/entities/business_image.dart';
+import '../../domain/entities/business_schedule.dart';
 import '../../domain/entities/business_status.dart';
 import '../../domain/repositories/business_repository.dart';
 
-class BusinessProfilePage extends StatelessWidget {
+class BusinessProfilePage extends StatefulWidget {
   const BusinessProfilePage({super.key, required this.business});
 
   static const String routeName = '/business-profile';
 
   final Business business;
+
+  @override
+  State<BusinessProfilePage> createState() => _BusinessProfilePageState();
+}
+
+class _BusinessProfilePageState extends State<BusinessProfilePage> {
+  final GlobalKey<_BusinessImagesState> _imagesKey = GlobalKey();
+  late final ItemListCubit _itemListCubit;
+  late Business _business;
+
+  @override
+  void initState() {
+    super.initState();
+    _business = widget.business;
+    _itemListCubit = ItemListCubit(
+      repository: context.read<ItemRepository>(),
+      businessId: widget.business.id,
+    )..initialize();
+  }
+
+  @override
+  void dispose() {
+    _itemListCubit.close();
+    super.dispose();
+  }
+
+  Future<void> _refreshBusiness() async {
+    final updated = await context.read<BusinessRepository>().getBusiness(
+      _business.id,
+    );
+    if (updated != null && mounted) {
+      setState(() => _business = updated);
+    }
+  }
+
+  Future<void> _onRefresh() {
+    return Future.wait([
+      _refreshBusiness(),
+      _imagesKey.currentState?.reload() ?? Future<void>.value(),
+      _itemListCubit.refresh(),
+    ]);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,18 +70,32 @@ class BusinessProfilePage extends StatelessWidget {
           IconButton(onPressed: null, icon: Icon(Icons.favorite_border)),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: _BusinessCard(business: business),
+      body: RefreshIndicator(
+        onRefresh: _onRefresh,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: _BusinessCard(
+            business: _business,
+            imagesKey: _imagesKey,
+            itemListCubit: _itemListCubit,
+          ),
+        ),
       ),
     );
   }
 }
 
 class _BusinessCard extends StatelessWidget {
-  const _BusinessCard({required this.business});
+  const _BusinessCard({
+    required this.business,
+    required this.imagesKey,
+    required this.itemListCubit,
+  });
 
   final Business business;
+  final GlobalKey<_BusinessImagesState> imagesKey;
+  final ItemListCubit itemListCubit;
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +105,7 @@ class _BusinessCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _BusinessImages(businessId: business.id),
+          _BusinessImages(key: imagesKey, businessId: business.id),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -72,11 +131,7 @@ class _BusinessCard extends StatelessWidget {
             text: business.address,
           ),
           const SizedBox(height: 4),
-          _IconLine(
-            icon: Icons.access_time,
-            iconColor: Colors.green,
-            text: business.status == BusinessStatus.active ? 'Open' : 'Closed',
-          ),
+          _ScheduleLine(business: business),
           if (business.phone != null || business.whatsapp != null) ...[
             const SizedBox(height: 12),
             Row(
@@ -105,7 +160,7 @@ class _BusinessCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 20),
-          BusinessItemsSection(businessId: business.id),
+          BusinessItemsSection(businessId: business.id, cubit: itemListCubit),
         ],
       ),
     );
@@ -113,7 +168,7 @@ class _BusinessCard extends StatelessWidget {
 }
 
 class _BusinessImages extends StatefulWidget {
-  const _BusinessImages({required this.businessId});
+  const _BusinessImages({super.key, required this.businessId});
 
   final String businessId;
 
@@ -139,6 +194,14 @@ class _BusinessImagesState extends State<_BusinessImages> {
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> reload() async {
+    final future = context.read<BusinessRepository>().getBusinessImages(
+      widget.businessId,
+    );
+    setState(() => _future = future);
+    await future.catchError((_) => const <BusinessImage>[]);
   }
 
   void _openFullScreen(
@@ -266,6 +329,58 @@ class _ImagePlaceholder extends StatelessWidget {
           child: child,
         ),
       ),
+    );
+  }
+}
+
+class _ScheduleLine extends StatelessWidget {
+  const _ScheduleLine({required this.business});
+
+  final Business business;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final schedule = business.schedule;
+
+    bool isOpen;
+    String? detail;
+    if (schedule != null && schedule.isNotEmpty) {
+      final status = BusinessSchedule.fromMap(
+        schedule,
+      ).statusAt(DateTime.now());
+      isOpen = status.isOpen;
+      detail = status.detail;
+    } else {
+      isOpen = business.status == BusinessStatus.active;
+    }
+
+    final color = isOpen ? Colors.green : Colors.redAccent;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(Icons.access_time, color: color, size: 18),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: isOpen ? 'Abierto' : 'Cerrado',
+                  style: TextStyle(color: color, fontWeight: FontWeight.w600),
+                ),
+                if (detail != null)
+                  TextSpan(
+                    text: '  $detail',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
