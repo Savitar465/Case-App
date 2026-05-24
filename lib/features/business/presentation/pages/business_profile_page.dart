@@ -5,6 +5,9 @@ import '../../../../core/widgets/full_screen_image_viewer.dart';
 import '../../../items/domain/repositories/item_repository.dart';
 import '../../../items/presentation/bloc/item_list_cubit.dart';
 import '../../../items/presentation/widgets/business_items_section.dart';
+import '../../../offers/domain/repositories/offer_repository.dart';
+import '../../../offers/presentation/bloc/offer_list_cubit.dart';
+import '../../../offers/presentation/widgets/business_offers_section.dart';
 import '../../domain/entities/business.dart';
 import '../../domain/entities/business_image.dart';
 import '../../domain/entities/business_schedule.dart';
@@ -25,6 +28,7 @@ class BusinessProfilePage extends StatefulWidget {
 class _BusinessProfilePageState extends State<BusinessProfilePage> {
   final GlobalKey<_BusinessImagesState> _imagesKey = GlobalKey();
   late final ItemListCubit _itemListCubit;
+  late final OfferListCubit _offerListCubit;
   late Business _business;
 
   @override
@@ -35,11 +39,16 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
       repository: context.read<ItemRepository>(),
       businessId: widget.business.id,
     )..initialize();
+    _offerListCubit = OfferListCubit(
+      repository: context.read<OfferRepository>(),
+      businessId: widget.business.id,
+    )..initialize();
   }
 
   @override
   void dispose() {
     _itemListCubit.close();
+    _offerListCubit.close();
     super.dispose();
   }
 
@@ -57,6 +66,7 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
       _refreshBusiness(),
       _imagesKey.currentState?.reload() ?? Future<void>.value(),
       _itemListCubit.refresh(),
+      _offerListCubit.refresh(),
     ]);
   }
 
@@ -79,6 +89,7 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
             business: _business,
             imagesKey: _imagesKey,
             itemListCubit: _itemListCubit,
+            offerListCubit: _offerListCubit,
           ),
         ),
       ),
@@ -91,11 +102,13 @@ class _BusinessCard extends StatelessWidget {
     required this.business,
     required this.imagesKey,
     required this.itemListCubit,
+    required this.offerListCubit,
   });
 
   final Business business;
   final GlobalKey<_BusinessImagesState> imagesKey;
   final ItemListCubit itemListCubit;
+  final OfferListCubit offerListCubit;
 
   @override
   Widget build(BuildContext context) {
@@ -159,6 +172,8 @@ class _BusinessCard extends StatelessWidget {
               ],
             ),
           ],
+          const SizedBox(height: 16),
+          BusinessOffersSection(businessId: business.id, cubit: offerListCubit),
           const SizedBox(height: 20),
           BusinessItemsSection(businessId: business.id, cubit: itemListCubit),
         ],
