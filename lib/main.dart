@@ -15,6 +15,10 @@ import 'features/items/domain/repositories/item_repository.dart';
 import 'features/offers/data/datasources/remote/offer_remote_data_source.dart';
 import 'features/offers/data/repositories/offer_repository_impl.dart';
 import 'features/offers/domain/repositories/offer_repository.dart';
+import 'features/market/data/datasources/market_remote_data_source.dart';
+import 'features/market/data/repositories/market_repository_impl.dart';
+import 'features/market/domain/repositories/market_repository.dart';
+import 'features/market/presentation/pages/market_home_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,15 +30,18 @@ Future<void> main() async {
 }
 
 Future<SupabaseClient> _initializeSupabase() async {
-  const url = String.fromEnvironment('SUPABASE_URL');
+  final rawUrl = const String.fromEnvironment('SUPABASE_URL');
   const anonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
-  if (url.isEmpty || anonKey.isEmpty) {
+  if (rawUrl.isEmpty || anonKey.isEmpty) {
     throw StateError(
       'Supabase credentials are missing. '
       'Provide SUPABASE_URL and SUPABASE_ANON_KEY via --dart-define.',
     );
   }
+
+  // Sanitizamos la URL: eliminamos espacios, barras finales y el sufijo /rest/v1 si existe
+  final url = rawUrl.trim().replaceAll(RegExp(r'/rest/v1/?$'), '').replaceAll(RegExp(r'/$'), '');
 
   await Supabase.initialize(url: url, anonKey: anonKey);
   return Supabase.instance.client;
@@ -57,11 +64,16 @@ _AppDependencies _buildDependencies(SupabaseClient supabase) {
     remoteDataSource: OfferRemoteDataSource(supabase),
   );
 
+  final marketRepository = MarketRepositoryImpl(
+    remoteDataSource: MarketRemoteDataSource(supabase),
+  );
+
   return _AppDependencies(
     authRepository: authRepository,
     businessRepository: businessRepository,
     itemRepository: itemRepository,
     offerRepository: offerRepository,
+    marketRepository: marketRepository,
   );
 }
 
@@ -71,12 +83,14 @@ class _AppDependencies {
     required this.businessRepository,
     required this.itemRepository,
     required this.offerRepository,
+    required this.marketRepository,
   });
 
   final AuthRepository authRepository;
   final BusinessRepository businessRepository;
   final ItemRepository itemRepository;
   final OfferRepository offerRepository;
+  final MarketRepository marketRepository;
 }
 
 class _AppRoot extends StatelessWidget {
@@ -100,8 +114,16 @@ class _AppRoot extends StatelessWidget {
         RepositoryProvider<OfferRepository>.value(
           value: dependencies.offerRepository,
         ),
+        RepositoryProvider<MarketRepository>.value(
+          value: dependencies.marketRepository,
+        ),
       ],
-      child: App(authRepository: dependencies.authRepository),
+      // Bypass temporal del Login para probar la nueva pestaña directamente
+      // child: App(authRepository: dependencies.authRepository),
+      child: const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: MarketHomePage(),
+      ),
     );
   }
 }
