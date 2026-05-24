@@ -25,13 +25,17 @@ class ItemListCubit extends Cubit<ItemListState> {
   Future<void> initialize() async {
     emit(state.copyWith(isLoading: true, clearError: true));
     await _subscription?.cancel();
-    _subscription = _repository.watchItems(_businessId).listen(
-      (items) => emit(state.copyWith(isLoading: false, items: items)),
-      onError: (Object error, _) {
-        final message = error is ItemFailure ? error.message : error.toString();
-        emit(state.copyWith(isLoading: false, error: message));
-      },
-    );
+    _subscription = _repository
+        .watchItems(_businessId)
+        .listen(
+          (items) => emit(state.copyWith(isLoading: false, items: items)),
+          onError: (Object error, _) {
+            final message = error is ItemFailure
+                ? error.message
+                : error.toString();
+            emit(state.copyWith(isLoading: false, error: message));
+          },
+        );
     await refresh();
   }
 
