@@ -9,6 +9,8 @@ import 'package:market_app/features/auth/presentation/pages/login_page.dart';
 import 'package:market_app/features/business/domain/entities/business.dart';
 import 'package:market_app/features/business/domain/entities/business_image.dart';
 import 'package:market_app/features/business/domain/repositories/business_repository.dart';
+import 'package:market_app/features/items/domain/entities/item.dart';
+import 'package:market_app/features/items/domain/repositories/item_repository.dart';
 
 class _FakeAuthRepository implements AuthRepository {
   @override
@@ -40,10 +42,23 @@ class _FakeBusinessRepository implements BusinessRepository {
       const [];
 }
 
+class _FakeItemRepository implements ItemRepository {
+  @override
+  Stream<List<Item>> watchItems(String businessId) =>
+      Stream<List<Item>>.value(const []);
+
+  @override
+  Future<void> refreshItems(String businessId) async {}
+
+  @override
+  Future<Item?> getItem(String id) async => null;
+}
+
 void main() {
   testWidgets('Shows Login screen initially', (WidgetTester tester) async {
     final authRepository = _FakeAuthRepository();
     final businessRepository = _FakeBusinessRepository();
+    final itemRepository = _FakeItemRepository();
     await tester.pumpWidget(
       MultiRepositoryProvider(
         providers: [
@@ -51,6 +66,7 @@ void main() {
           RepositoryProvider<BusinessRepository>.value(
             value: businessRepository,
           ),
+          RepositoryProvider<ItemRepository>.value(value: itemRepository),
         ],
         child: App(authRepository: authRepository),
       ),

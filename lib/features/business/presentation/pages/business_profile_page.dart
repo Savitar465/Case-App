@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../items/presentation/widgets/business_items_section.dart';
 import '../../domain/entities/business.dart';
 import '../../domain/entities/business_image.dart';
 import '../../domain/entities/business_status.dart';
@@ -102,6 +103,8 @@ class _BusinessCard extends StatelessWidget {
               ],
             ),
           ],
+          const SizedBox(height: 20),
+          BusinessItemsSection(businessId: business.id),
         ],
       ),
     );
