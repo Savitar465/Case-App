@@ -10,12 +10,24 @@ import '../bloc/item_list_cubit.dart';
 /// Owns its own [ItemListCubit] scoped to [businessId]. Uses shrink-wrap so it
 /// can sit inside a `SingleChildScrollView` (e.g. BusinessProfilePage).
 class BusinessItemsSection extends StatelessWidget {
-  const BusinessItemsSection({super.key, required this.businessId});
+  const BusinessItemsSection({super.key, required this.businessId, this.cubit});
 
   final String businessId;
 
+  /// Optional externally-owned cubit. When provided, the parent controls its
+  /// lifecycle and can trigger [ItemListCubit.refresh] (e.g. pull-to-refresh).
+  /// When null, this widget creates and owns its own cubit.
+  final ItemListCubit? cubit;
+
   @override
   Widget build(BuildContext context) {
+    final externalCubit = cubit;
+    if (externalCubit != null) {
+      return BlocProvider<ItemListCubit>.value(
+        value: externalCubit,
+        child: const _SectionBody(),
+      );
+    }
     return BlocProvider<ItemListCubit>(
       create: (context) => ItemListCubit(
         repository: context.read<ItemRepository>(),
