@@ -9,6 +9,9 @@ import 'features/auth/domain/repositories/auth_repository.dart';
 import 'features/business/data/datasources/remote/business_remote_data_source.dart';
 import 'features/business/data/repositories/business_repository_impl.dart';
 import 'features/business/domain/repositories/business_repository.dart';
+import 'features/follow/data/datasources/remote/follow_remote_data_source.dart';
+import 'features/follow/data/repositories/follow_repository_impl.dart';
+import 'features/follow/domain/repositories/follow_repository.dart';
 import 'features/items/data/datasources/remote/item_remote_data_source.dart';
 import 'features/items/data/repositories/item_repository_impl.dart';
 import 'features/items/domain/repositories/item_repository.dart';
@@ -57,11 +60,16 @@ _AppDependencies _buildDependencies(SupabaseClient supabase) {
     remoteDataSource: OfferRemoteDataSource(supabase),
   );
 
+  final followRepository = FollowRepositoryImpl(
+    remoteDataSource: FollowRemoteDataSource(supabase),
+  );
+
   return _AppDependencies(
     authRepository: authRepository,
     businessRepository: businessRepository,
     itemRepository: itemRepository,
     offerRepository: offerRepository,
+    followRepository: followRepository,
   );
 }
 
@@ -71,12 +79,14 @@ class _AppDependencies {
     required this.businessRepository,
     required this.itemRepository,
     required this.offerRepository,
+    required this.followRepository,
   });
 
   final AuthRepository authRepository;
   final BusinessRepository businessRepository;
   final ItemRepository itemRepository;
   final OfferRepository offerRepository;
+  final FollowRepository followRepository;
 }
 
 class _AppRoot extends StatelessWidget {
@@ -99,6 +109,9 @@ class _AppRoot extends StatelessWidget {
         ),
         RepositoryProvider<OfferRepository>.value(
           value: dependencies.offerRepository,
+        ),
+        RepositoryProvider<FollowRepository>.value(
+          value: dependencies.followRepository,
         ),
       ],
       child: App(authRepository: dependencies.authRepository),

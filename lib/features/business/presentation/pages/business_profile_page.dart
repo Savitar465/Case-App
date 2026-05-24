@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/widgets/full_screen_image_viewer.dart';
+import '../../../follow/domain/repositories/follow_repository.dart';
+import '../../../follow/presentation/bloc/follow_list_cubit.dart';
+import '../../../follow/presentation/widgets/follow_button.dart';
 import '../../../items/domain/repositories/item_repository.dart';
 import '../../../items/presentation/bloc/item_list_cubit.dart';
 import '../../../items/presentation/widgets/business_items_section.dart';
@@ -29,6 +32,7 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
   final GlobalKey<_BusinessImagesState> _imagesKey = GlobalKey();
   late final ItemListCubit _itemListCubit;
   late final OfferListCubit _offerListCubit;
+  late final FollowListCubit _followListCubit;
   late Business _business;
 
   @override
@@ -43,12 +47,16 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
       repository: context.read<OfferRepository>(),
       businessId: widget.business.id,
     )..initialize();
+    _followListCubit = FollowListCubit(
+      repository: context.read<FollowRepository>(),
+    )..initialize();
   }
 
   @override
   void dispose() {
     _itemListCubit.close();
     _offerListCubit.close();
+    _followListCubit.close();
     super.dispose();
   }
 
@@ -67,32 +75,59 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
       _imagesKey.currentState?.reload() ?? Future<void>.value(),
       _itemListCubit.refresh(),
       _offerListCubit.refresh(),
+      _followListCubit.refresh(),
     ]);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: const BackButton(),
-        actions: const [
-          IconButton(onPressed: null, icon: Icon(Icons.share_outlined)),
-          IconButton(onPressed: null, icon: Icon(Icons.favorite_border)),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: _onRefresh,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: _BusinessCard(
-            business: _business,
-            imagesKey: _imagesKey,
-            itemListCubit: _itemListCubit,
-            offerListCubit: _offerListCubit,
+    return BlocProvider<FollowListCubit>.value(
+      value: _followListCubit,
+      child: Scaffold(
+        appBar: AppBar(
+          leading: const BackButton(),
+          actions: [
+            const IconButton(onPressed: null, icon: Icon(Icons.share_outlined)),
+            _FavoriteAction(businessId: _business.id),
+          ],
+        ),
+        body: RefreshIndicator(
+          onRefresh: _onRefresh,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: _BusinessCard(
+              business: _business,
+              imagesKey: _imagesKey,
+              itemListCubit: _itemListCubit,
+              offerListCubit: _offerListCubit,
+              followListCubit: _followListCubit,
+            ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _FavoriteAction extends StatelessWidget {
+  const _FavoriteAction({required this.businessId});
+
+  final String businessId;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<FollowListCubit, FollowListState>(
+      builder: (context, state) {
+        final isFollowing = state.isFollowing(businessId);
+        return IconButton(
+          onPressed: () => context.read<FollowListCubit>().toggle(businessId),
+          icon: Icon(
+            isFollowing ? Icons.favorite : Icons.favorite_border,
+            color: isFollowing ? Colors.redAccent : null,
+          ),
+        );
+      },
     );
   }
 }
@@ -103,12 +138,14 @@ class _BusinessCard extends StatelessWidget {
     required this.imagesKey,
     required this.itemListCubit,
     required this.offerListCubit,
+    required this.followListCubit,
   });
 
   final Business business;
   final GlobalKey<_BusinessImagesState> imagesKey;
   final ItemListCubit itemListCubit;
   final OfferListCubit offerListCubit;
+  final FollowListCubit followListCubit;
 
   @override
   Widget build(BuildContext context) {
@@ -145,6 +182,14 @@ class _BusinessCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           _ScheduleLine(business: business),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FollowButton(
+              businessId: business.id,
+              cubit: followListCubit,
+            ),
+          ),
           if (business.phone != null || business.whatsapp != null) ...[
             const SizedBox(height: 12),
             Row(
