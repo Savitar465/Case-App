@@ -241,7 +241,9 @@ class _CategoryItem extends StatelessWidget {
 
     try {
       // Si el string viene con "0x", eliminamos los primeros dos caracteres
-      final cleanHex = iconHex.startsWith('0x') ? iconHex.substring(2) : iconHex;
+      final cleanHex = iconHex.startsWith('0x')
+          ? iconHex.substring(2)
+          : iconHex;
 
       // IMPORTANTE: No usar 'const' aquí ya que el valor se parsea en ejecución
       return IconData(
