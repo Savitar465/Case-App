@@ -58,10 +58,18 @@ class MarketRepositoryImpl implements MarketRepository {
   MarketFailure _mapInfraError(Object error) {
     if (error is MarketFailure) return error;
     if (error is MarketRemoteException) return MarketFailure(error.message);
-    if (error is SocketException)
+    if (error is MarketFailure) {
+      return error;
+    }
+    if (error is MarketRemoteException) {
+      return MarketFailure(error.message);
+    }
+    if (error is SocketException) {
       return const MarketFailure('No hay conexión a internet');
-    if (error is TimeoutException)
+    }
+    if (error is TimeoutException) {
       return const MarketFailure('La solicitud ha tardado demasiado');
+    }
     return MarketFailure(error.toString());
   }
 }
