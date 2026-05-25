@@ -236,6 +236,7 @@ class _CategoryItem extends StatelessWidget {
 
   /// Convierte el string hexadecimal de Supabase a IconData de forma segura.
   /// Soporta formatos como "e8cc" o "0xe8cc".
+  // ignore: non_const_argument_for_const_parameter
   IconData _getIconData(String? iconHex) {
     if (iconHex == null || iconHex.isEmpty) return Icons.store_outlined;
 
@@ -246,8 +247,8 @@ class _CategoryItem extends StatelessWidget {
           : iconHex;
 
       // IMPORTANTE: No usar 'const' aquí ya que el valor se parsea en ejecución
-      // ignore: non_const_argument_for_const_parameter
       return IconData(
+        // ignore: non_const_argument_for_const_parameter
         int.parse(cleanHex, radix: 16),
         fontFamily: 'MaterialIcons',
       );
