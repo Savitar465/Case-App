@@ -5,19 +5,24 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'features/auth/data/datasources/remote/auth_remote_data_source.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/auth/domain/repositories/auth_repository.dart';
+import 'features/auth/domain/usecases/login_use_case.dart';
+import 'features/auth/domain/usecases/logout_use_case.dart';
+import 'features/auth/domain/usecases/restore_session_use_case.dart';
+import 'features/auth/presentation/bloc/auth_bloc.dart';
+import 'features/auth/presentation/pages/login_page.dart';
 import 'features/business/data/datasources/remote/business_remote_data_source.dart';
 import 'features/business/data/repositories/business_repository_impl.dart';
 import 'features/business/domain/repositories/business_repository.dart';
 import 'features/items/data/datasources/remote/item_remote_data_source.dart';
 import 'features/items/data/repositories/item_repository_impl.dart';
 import 'features/items/domain/repositories/item_repository.dart';
-import 'features/offers/data/datasources/remote/offer_remote_data_source.dart';
-import 'features/offers/data/repositories/offer_repository_impl.dart';
-import 'features/offers/domain/repositories/offer_repository.dart';
 import 'features/market/data/datasources/market_remote_data_source.dart';
 import 'features/market/data/repositories/market_repository_impl.dart';
 import 'features/market/domain/repositories/market_repository.dart';
 import 'features/market/presentation/pages/market_home_page.dart';
+import 'features/offers/data/datasources/remote/offer_remote_data_source.dart';
+import 'features/offers/data/repositories/offer_repository_impl.dart';
+import 'features/offers/domain/repositories/offer_repository.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -122,9 +127,24 @@ class _AppRoot extends StatelessWidget {
       ],
       // Bypass temporal del Login para probar la nueva pestaña directamente
       // child: App(authRepository: dependencies.authRepository),
-      child: const MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: MarketHomePage(),
+      // AuthBloc se provee por encima del MaterialApp para que el botón de
+      // logout (y el LoginPage al que navega) puedan acceder a él.
+      child: BlocProvider<AuthBloc>(
+        create: (_) => AuthBloc(
+          loginUseCase: LoginUseCase(dependencies.authRepository),
+          logoutUseCase: LogoutUseCase(dependencies.authRepository),
+          restoreSessionUseCase: RestoreSessionUseCase(
+            dependencies.authRepository,
+          ),
+        ),
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          home: const MarketHomePage(),
+          routes: {
+            MarketHomePage.routeName: (_) => const MarketHomePage(),
+            LoginPage.routeName: (_) => const LoginPage(),
+          },
+        ),
       ),
     );
   }

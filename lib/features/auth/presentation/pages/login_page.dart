@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:market_app/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:market_app/features/business/presentation/pages/business_list_page.dart';
+
+import '../../../market/presentation/pages/market_home_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -49,7 +50,7 @@ class _LoginPageState extends State<LoginPage> {
           if (state is AuthAuthenticated) {
             Navigator.of(
               context,
-            ).pushReplacementNamed(BusinessListPage.routeName);
+            ).pushReplacementNamed(MarketHomePage.routeName);
           }
         },
         builder: (context, state) {

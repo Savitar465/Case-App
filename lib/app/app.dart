@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:market_app/core/constants/app_constants.dart';
 import 'package:market_app/features/auth/domain/repositories/auth_repository.dart';
 import 'package:market_app/features/auth/domain/usecases/login_use_case.dart';
@@ -8,7 +7,7 @@ import 'package:market_app/features/auth/domain/usecases/logout_use_case.dart';
 import 'package:market_app/features/auth/domain/usecases/restore_session_use_case.dart';
 import 'package:market_app/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:market_app/features/auth/presentation/pages/login_page.dart';
-import 'package:market_app/features/business/presentation/pages/business_list_page.dart';
+import 'package:market_app/features/market/presentation/pages/market_home_page.dart';
 
 /// Root widget. Wires the auth-scoped Bloc and the top-level routing.
 class App extends StatelessWidget {
@@ -38,7 +37,7 @@ class App extends StatelessWidget {
         home: const _AuthGate(),
         routes: {
           LoginPage.routeName: (_) => const LoginPage(),
-          BusinessListPage.routeName: (_) => const BusinessListPage(),
+          MarketHomePage.routeName: (_) => const MarketHomePage(),
         },
       ),
     );
@@ -52,7 +51,7 @@ class _AuthGate extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) => switch (state) {
-        AuthAuthenticated() => const BusinessListPage(),
+        AuthAuthenticated() => const MarketHomePage(),
         AuthLoading() => const _LoadingScreen(),
         AuthInitial() || AuthError() => const LoginPage(),
       },

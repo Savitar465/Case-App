@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:market_app/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:market_app/features/auth/presentation/pages/login_page.dart';
+import 'package:market_app/features/business/domain/repositories/business_repository.dart';
+import 'package:market_app/features/business/presentation/pages/business_profile_page.dart';
 import 'package:market_app/features/market/domain/entities/business.dart';
 import 'package:market_app/features/market/domain/entities/category.dart';
 import 'package:market_app/features/market/domain/repositories/market_repository.dart';
@@ -63,6 +67,13 @@ class _MarketHomePageState extends State<MarketHomePage> {
 class _HomeView extends StatelessWidget {
   const _HomeView();
 
+  void _logout(BuildContext context) {
+    context.read<AuthBloc>().add(const LogoutRequested());
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const LoginPage()));
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -103,11 +114,20 @@ class _HomeView extends StatelessWidget {
                         ),
                       ],
                     ),
-                    IconButton(
-                      onPressed: () {},
-                      icon: const Badge(
-                        child: Icon(Icons.notifications_none_outlined),
-                      ),
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: () {},
+                          icon: const Badge(
+                            child: Icon(Icons.notifications_none_outlined),
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'Cerrar sesión',
+                          onPressed: () => _logout(context),
+                          icon: const Icon(Icons.logout),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -262,9 +282,36 @@ class _CategoryItem extends StatelessWidget {
 class _BusinessTile extends StatelessWidget {
   const _BusinessTile({required this.business});
   final Business business;
+
+  Future<void> _openProfile(BuildContext context) async {
+    final repository = context.read<BusinessRepository>();
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
+    try {
+      final fullBusiness = await repository.getBusiness(business.id);
+      if (fullBusiness == null) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('No se pudo cargar el negocio')),
+        );
+        return;
+      }
+      await navigator.push(
+        MaterialPageRoute(
+          builder: (_) => BusinessProfilePage(business: fullBusiness),
+        ),
+      );
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('No se pudo abrir el negocio')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListTile(
+      onTap: () => _openProfile(context),
       leading: const CircleAvatar(child: Icon(Icons.business)),
       title: Text(
         business.name,
