@@ -32,3 +32,14 @@ class AuthError extends AuthState {
   @override
   List<Object?> get props => [message];
 }
+
+/// Transient informational state (e.g. "account created, confirm your email").
+/// Treated like [AuthInitial] for routing purposes.
+class AuthInfo extends AuthState {
+  const AuthInfo({required this.message});
+
+  final String message;
+
+  @override
+  List<Object?> get props => [message];
+}

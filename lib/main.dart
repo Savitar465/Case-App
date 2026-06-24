@@ -8,8 +8,10 @@ import 'features/auth/domain/repositories/auth_repository.dart';
 import 'features/auth/domain/usecases/login_use_case.dart';
 import 'features/auth/domain/usecases/logout_use_case.dart';
 import 'features/auth/domain/usecases/restore_session_use_case.dart';
+import 'features/auth/domain/usecases/signup_use_case.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/pages/login_page.dart';
+import 'features/auth/presentation/pages/signup_page.dart';
 import 'features/business/data/datasources/remote/business_remote_data_source.dart';
 import 'features/business/data/repositories/business_repository_impl.dart';
 import 'features/business/domain/repositories/business_repository.dart';
@@ -23,6 +25,9 @@ import 'features/market/presentation/pages/market_home_page.dart';
 import 'features/offers/data/datasources/remote/offer_remote_data_source.dart';
 import 'features/offers/data/repositories/offer_repository_impl.dart';
 import 'features/offers/domain/repositories/offer_repository.dart';
+import 'features/reviews/data/datasources/remote/review_remote_data_source.dart';
+import 'features/reviews/data/repositories/review_repository_impl.dart';
+import 'features/reviews/domain/repositories/review_repository.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -75,12 +80,17 @@ _AppDependencies _buildDependencies(SupabaseClient supabase) {
     remoteDataSource: MarketRemoteDataSource(supabase),
   );
 
+  final reviewRepository = ReviewRepositoryImpl(
+    remoteDataSource: ReviewRemoteDataSource(supabase),
+  );
+
   return _AppDependencies(
     authRepository: authRepository,
     businessRepository: businessRepository,
     itemRepository: itemRepository,
     offerRepository: offerRepository,
     marketRepository: marketRepository,
+    reviewRepository: reviewRepository,
   );
 }
 
@@ -91,6 +101,7 @@ class _AppDependencies {
     required this.itemRepository,
     required this.offerRepository,
     required this.marketRepository,
+    required this.reviewRepository,
   });
 
   final AuthRepository authRepository;
@@ -98,6 +109,7 @@ class _AppDependencies {
   final ItemRepository itemRepository;
   final OfferRepository offerRepository;
   final MarketRepository marketRepository;
+  final ReviewRepository reviewRepository;
 }
 
 class _AppRoot extends StatelessWidget {
@@ -124,6 +136,9 @@ class _AppRoot extends StatelessWidget {
         RepositoryProvider<MarketRepository>.value(
           value: dependencies.marketRepository,
         ),
+        RepositoryProvider<ReviewRepository>.value(
+          value: dependencies.reviewRepository,
+        ),
       ],
       // Bypass temporal del Login para probar la nueva pestaña directamente
       // child: App(authRepository: dependencies.authRepository),
@@ -136,6 +151,7 @@ class _AppRoot extends StatelessWidget {
           restoreSessionUseCase: RestoreSessionUseCase(
             dependencies.authRepository,
           ),
+          signUpUseCase: SignUpUseCase(dependencies.authRepository),
         ),
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
@@ -143,6 +159,7 @@ class _AppRoot extends StatelessWidget {
           routes: {
             MarketHomePage.routeName: (_) => const MarketHomePage(),
             LoginPage.routeName: (_) => const LoginPage(),
+            SignupPage.routeName: (_) => const SignupPage(),
           },
         ),
       ),

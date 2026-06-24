@@ -5,8 +5,10 @@ import 'package:market_app/features/auth/domain/repositories/auth_repository.dar
 import 'package:market_app/features/auth/domain/usecases/login_use_case.dart';
 import 'package:market_app/features/auth/domain/usecases/logout_use_case.dart';
 import 'package:market_app/features/auth/domain/usecases/restore_session_use_case.dart';
+import 'package:market_app/features/auth/domain/usecases/signup_use_case.dart';
 import 'package:market_app/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:market_app/features/auth/presentation/pages/login_page.dart';
+import 'package:market_app/features/auth/presentation/pages/signup_page.dart';
 import 'package:market_app/features/market/presentation/pages/market_home_page.dart';
 
 /// Root widget. Wires the auth-scoped Bloc and the top-level routing.
@@ -14,11 +16,13 @@ class App extends StatelessWidget {
   App({super.key, required AuthRepository authRepository})
     : _loginUseCase = LoginUseCase(authRepository),
       _logoutUseCase = LogoutUseCase(authRepository),
-      _restoreSessionUseCase = RestoreSessionUseCase(authRepository);
+      _restoreSessionUseCase = RestoreSessionUseCase(authRepository),
+      _signUpUseCase = SignUpUseCase(authRepository);
 
   final LoginUseCase _loginUseCase;
   final LogoutUseCase _logoutUseCase;
   final RestoreSessionUseCase _restoreSessionUseCase;
+  final SignUpUseCase _signUpUseCase;
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +31,7 @@ class App extends StatelessWidget {
         loginUseCase: _loginUseCase,
         logoutUseCase: _logoutUseCase,
         restoreSessionUseCase: _restoreSessionUseCase,
+        signUpUseCase: _signUpUseCase,
       )..add(const AuthStarted()),
       child: MaterialApp(
         title: AppConstants.appName,
@@ -37,6 +42,7 @@ class App extends StatelessWidget {
         home: const _AuthGate(),
         routes: {
           LoginPage.routeName: (_) => const LoginPage(),
+          SignupPage.routeName: (_) => const SignupPage(),
           MarketHomePage.routeName: (_) => const MarketHomePage(),
         },
       ),
@@ -53,7 +59,7 @@ class _AuthGate extends StatelessWidget {
       builder: (context, state) => switch (state) {
         AuthAuthenticated() => const MarketHomePage(),
         AuthLoading() => const _LoadingScreen(),
-        AuthInitial() || AuthError() => const LoginPage(),
+        AuthInitial() || AuthError() || AuthInfo() => const LoginPage(),
       },
     );
   }

@@ -47,6 +47,24 @@ class BusinessRepositoryImpl implements BusinessRepository {
     }
   }
 
+  @override
+  Future<bool> isFollowing(String businessId) async {
+    try {
+      return await _remote.fetchIsFollowing(businessId);
+    } catch (error) {
+      throw _mapInfraError(error);
+    }
+  }
+
+  @override
+  Future<bool> toggleFollow(String businessId) async {
+    try {
+      return await _remote.toggleFollow(businessId);
+    } catch (error) {
+      throw _mapInfraError(error);
+    }
+  }
+
   BusinessFailure _mapInfraError(Object error) {
     if (error is BusinessFailure) return error;
     if (error is BusinessRemoteException) return BusinessFailure(error.message);

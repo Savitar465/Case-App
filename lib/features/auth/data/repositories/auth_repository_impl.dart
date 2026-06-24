@@ -1,12 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
-
 import 'package:market_app/features/auth/data/datasources/remote/auth_remote_data_source.dart';
 import 'package:market_app/features/auth/domain/entities/auth_failure.dart';
 import 'package:market_app/features/auth/domain/entities/auth_session.dart';
 import 'package:market_app/features/auth/domain/repositories/auth_repository.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 /// Supabase-only auth repository. Sessions are persisted by `supabase_flutter`
 /// itself, so the app never stores credentials on-device.
@@ -26,6 +25,18 @@ class AuthRepositoryImpl implements AuthRepository {
         email: email,
         password: password,
       );
+    } catch (error) {
+      throw AuthFailure(_describeLoginError(error));
+    }
+  }
+
+  @override
+  Future<AuthSession?> signUp({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      return await _remoteDataSource.signUp(email: email, password: password);
     } catch (error) {
       throw AuthFailure(_describeLoginError(error));
     }

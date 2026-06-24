@@ -31,6 +31,29 @@ class AuthRemoteDataSource {
     );
   }
 
+  /// Registers a new user. Returns a session model when Supabase issues one
+  /// immediately, or `null` when email confirmation is pending.
+  Future<AuthSessionModel?> signUp({
+    required String email,
+    required String password,
+  }) async {
+    final response = await _client.auth.signUp(
+      email: email,
+      password: password,
+    );
+    final session = response.session;
+    if (session == null) {
+      // Email confirmation is enabled: the account exists but there is no
+      // session yet.
+      return null;
+    }
+    final sessionModel = AuthSessionModel.fromSupabase(session);
+    return _enrichSessionWithRoles(
+      session: sessionModel,
+      userId: session.user.id,
+    );
+  }
+
   Future<AuthSessionModel?> currentSession() async {
     final session = _client.auth.currentSession;
     if (session == null) {

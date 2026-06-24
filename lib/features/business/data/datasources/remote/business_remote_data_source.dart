@@ -13,7 +13,52 @@ class BusinessRemoteDataSource {
   static const String _schema = 'public';
   static const String _table = 'businesses';
   static const String _imagesTable = 'business_images';
+  static const String _followsTable = 'business_follows';
   static const String _imagesBucket = 'vikus';
+
+  String? get _currentUserId => _client.auth.currentUser?.id;
+
+  /// Whether the signed-in user follows [businessId]. Always false when there
+  /// is no session.
+  Future<bool> fetchIsFollowing(String businessId) async {
+    final userId = _currentUserId;
+    if (userId == null) return false;
+    try {
+      final row = await _client
+          .schema(_schema)
+          .from(_followsTable)
+          .select('business_id')
+          .eq('business_id', businessId)
+          .eq('user_id', userId)
+          .maybeSingle();
+      return row != null;
+    } on PostgrestException catch (error) {
+      throw BusinessRemoteException(error.message);
+    }
+  }
+
+  /// Toggles the follow row for the current user and returns the new state.
+  Future<bool> toggleFollow(String businessId) async {
+    final userId = _currentUserId;
+    if (userId == null) {
+      throw const BusinessRemoteException.notAuthenticated();
+    }
+    try {
+      final following = await fetchIsFollowing(businessId);
+      final follows = _client.schema(_schema).from(_followsTable);
+      if (following) {
+        await follows
+            .delete()
+            .eq('business_id', businessId)
+            .eq('user_id', userId);
+        return false;
+      }
+      await follows.insert({'business_id': businessId, 'user_id': userId});
+      return true;
+    } on PostgrestException catch (error) {
+      throw BusinessRemoteException(error.message);
+    }
+  }
 
   Future<List<BusinessModel>> fetchBusinesses() async {
     try {
@@ -115,6 +160,9 @@ class BusinessRemoteDataSource {
 
 class BusinessRemoteException implements Exception {
   const BusinessRemoteException(this.message);
+
+  const BusinessRemoteException.notAuthenticated()
+    : message = 'Inicia sesión para seguir este negocio';
 
   final String message;
 

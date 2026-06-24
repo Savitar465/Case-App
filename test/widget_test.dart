@@ -1,6 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:market_app/app/app.dart';
 import 'package:market_app/features/auth/domain/entities/auth_session.dart';
 import 'package:market_app/features/auth/domain/entities/auth_user.dart';
@@ -17,6 +16,15 @@ class _FakeAuthRepository implements AuthRepository {
   Future<AuthSession> login({required String email, required String password}) {
     final user = AuthUser(id: '1', email: email);
     return Future.value(AuthSession(user: user, accessToken: 'token'));
+  }
+
+  @override
+  Future<AuthSession?> signUp({
+    required String email,
+    required String password,
+  }) async {
+    final user = AuthUser(id: '1', email: email);
+    return AuthSession(user: user, accessToken: 'token');
   }
 
   @override
@@ -40,6 +48,12 @@ class _FakeBusinessRepository implements BusinessRepository {
   @override
   Future<List<BusinessImage>> getBusinessImages(String businessId) async =>
       const [];
+
+  @override
+  Future<bool> isFollowing(String businessId) async => false;
+
+  @override
+  Future<bool> toggleFollow(String businessId) async => false;
 }
 
 class _FakeItemRepository implements ItemRepository {
