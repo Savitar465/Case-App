@@ -2,7 +2,7 @@ name: market_app
 description: "A new Flutter project about a maketplace."
 publish_to: 'none'
 
-version: 1.0.2+1
+version: 1.1.0+1
 
 environment:
   sdk: ^3.9.2
@@ -25,4 +25,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/
 

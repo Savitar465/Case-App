@@ -25,9 +25,16 @@ import 'features/market/presentation/pages/market_home_page.dart';
 import 'features/offers/data/datasources/remote/offer_remote_data_source.dart';
 import 'features/offers/data/repositories/offer_repository_impl.dart';
 import 'features/offers/domain/repositories/offer_repository.dart';
+import 'features/business_register/data/datasources/remote/business_registration_remote_data_source.dart';
+import 'features/business_register/data/repositories/business_registration_repository_impl.dart';
+import 'features/business_register/domain/repositories/business_registration_repository.dart';
+import 'features/profile/data/datasources/remote/profile_remote_data_source.dart';
+import 'features/profile/data/repositories/profile_repository_impl.dart';
+import 'features/profile/domain/repositories/profile_repository.dart';
 import 'features/reviews/data/datasources/remote/review_remote_data_source.dart';
 import 'features/reviews/data/repositories/review_repository_impl.dart';
 import 'features/reviews/domain/repositories/review_repository.dart';
+import 'features/welcome/presentation/pages/welcome_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -84,6 +91,14 @@ _AppDependencies _buildDependencies(SupabaseClient supabase) {
     remoteDataSource: ReviewRemoteDataSource(supabase),
   );
 
+  final profileRepository = ProfileRepositoryImpl(
+    remoteDataSource: ProfileRemoteDataSource(supabase),
+  );
+
+  final businessRegistrationRepository = BusinessRegistrationRepositoryImpl(
+    remoteDataSource: BusinessRegistrationRemoteDataSource(supabase),
+  );
+
   return _AppDependencies(
     authRepository: authRepository,
     businessRepository: businessRepository,
@@ -91,6 +106,8 @@ _AppDependencies _buildDependencies(SupabaseClient supabase) {
     offerRepository: offerRepository,
     marketRepository: marketRepository,
     reviewRepository: reviewRepository,
+    profileRepository: profileRepository,
+    businessRegistrationRepository: businessRegistrationRepository,
   );
 }
 
@@ -102,6 +119,8 @@ class _AppDependencies {
     required this.offerRepository,
     required this.marketRepository,
     required this.reviewRepository,
+    required this.profileRepository,
+    required this.businessRegistrationRepository,
   });
 
   final AuthRepository authRepository;
@@ -110,6 +129,8 @@ class _AppDependencies {
   final OfferRepository offerRepository;
   final MarketRepository marketRepository;
   final ReviewRepository reviewRepository;
+  final ProfileRepository profileRepository;
+  final BusinessRegistrationRepository businessRegistrationRepository;
 }
 
 class _AppRoot extends StatelessWidget {
@@ -139,6 +160,12 @@ class _AppRoot extends StatelessWidget {
         RepositoryProvider<ReviewRepository>.value(
           value: dependencies.reviewRepository,
         ),
+        RepositoryProvider<ProfileRepository>.value(
+          value: dependencies.profileRepository,
+        ),
+        RepositoryProvider<BusinessRegistrationRepository>.value(
+          value: dependencies.businessRegistrationRepository,
+        ),
       ],
       // Bypass temporal del Login para probar la nueva pestaña directamente
       // child: App(authRepository: dependencies.authRepository),
@@ -155,8 +182,9 @@ class _AppRoot extends StatelessWidget {
         ),
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
-          home: const MarketHomePage(),
+          home: const WelcomePage(),
           routes: {
+            WelcomePage.routeName: (_) => const WelcomePage(),
             MarketHomePage.routeName: (_) => const MarketHomePage(),
             LoginPage.routeName: (_) => const LoginPage(),
             SignupPage.routeName: (_) => const SignupPage(),

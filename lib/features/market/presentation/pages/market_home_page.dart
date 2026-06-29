@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:market_app/core/theme/app_colors.dart';
 import 'package:market_app/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:market_app/features/profile/presentation/pages/profile_page.dart';
 import 'package:market_app/features/auth/presentation/pages/login_page.dart';
 import 'package:market_app/features/business/domain/repositories/business_repository.dart';
 import 'package:market_app/features/business/presentation/pages/business_profile_page.dart';
@@ -32,20 +34,27 @@ class _MarketHomePageState extends State<MarketHomePage> {
           index: _selectedIndex,
           children: const [
             _HomeView(),
+            Center(child: Text('Ofertas (Próximamente)')),
             Center(child: Text('Favoritos (Próximamente)')),
-            Center(child: Text('Perfil (Próximamente)')),
+            ProfilePage(),
           ],
         ),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _selectedIndex,
           onTap: (index) => setState(() => _selectedIndex = index),
           type: BottomNavigationBarType.fixed,
-          selectedItemColor: Theme.of(context).primaryColor,
+          selectedItemColor: AppColors.purple,
+          unselectedItemColor: Colors.black54,
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.home_outlined),
               activeIcon: Icon(Icons.home),
-              label: 'Home',
+              label: 'Inicio',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.local_fire_department_outlined),
+              activeIcon: Icon(Icons.local_fire_department),
+              label: 'Ofertas',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.favorite_outline),
@@ -55,7 +64,7 @@ class _MarketHomePageState extends State<MarketHomePage> {
             BottomNavigationBarItem(
               icon: Icon(Icons.person_outline),
               activeIcon: Icon(Icons.person),
-              label: 'Perfil',
+              label: 'Mi perfil',
             ),
           ],
         ),
