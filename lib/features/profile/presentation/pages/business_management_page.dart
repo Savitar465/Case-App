@@ -39,7 +39,9 @@ class BusinessManagementPage extends StatelessWidget {
             onEdit: () => _comingSoon(context, 'Editar información'),
           ),
           const SizedBox(height: 18),
-          BoostPromo(onActivate: () => _comingSoon(context, 'Impulsar negocio')),
+          BoostPromo(
+            onActivate: () => _comingSoon(context, 'Impulsar negocio'),
+          ),
           const SizedBox(height: 24),
           const _SectionTitle('Tu rendimiento'),
           const SizedBox(height: 12),
@@ -86,9 +88,9 @@ class _Header extends StatelessWidget {
             children: [
               Text(
                 business.name,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 6),
               StatusDot(isActive: business.isActive),

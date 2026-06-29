@@ -80,10 +80,7 @@ class ProfileRemoteDataSource {
                 .neq('status', 'deleted')
                 .order('created_at', ascending: false)
             as List<dynamic>;
-    return rows
-        .whereType<Map<String, dynamic>>()
-        .map(_mapBusiness)
-        .toList();
+    return rows.whereType<Map<String, dynamic>>().map(_mapBusiness).toList();
   }
 
   ProfileBusiness _mapBusiness(Map<String, dynamic> json) {

@@ -50,7 +50,9 @@ class _CatalogItemFormPageState extends State<CatalogItemFormPage> {
       ScaffoldMessenger.of(context)
         ..clearSnackBars()
         ..showSnackBar(
-          SnackBar(content: Text('Ingresa el nombre del ${widget.kind.singular}')),
+          SnackBar(
+            content: Text('Ingresa el nombre del ${widget.kind.singular}'),
+          ),
         );
       return;
     }
@@ -109,10 +111,7 @@ class _CatalogItemFormPageState extends State<CatalogItemFormPage> {
               style: const TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 8),
-            WizardTextField(
-              controller: _descriptionController,
-              maxLines: 4,
-            ),
+            WizardTextField(controller: _descriptionController, maxLines: 4),
             const SizedBox(height: 16),
             _PhotoBox(
               count: _photoCount,
@@ -203,10 +202,7 @@ class _PriceCard extends StatelessWidget {
           ),
           if (hasDiscount) ...[
             const SizedBox(height: 8),
-            const Text(
-              'Precio con descuento',
-              style: TextStyle(fontSize: 16),
-            ),
+            const Text('Precio con descuento', style: TextStyle(fontSize: 16)),
             const SizedBox(height: 8),
             _Stepper(controller: discountController, onStep: onStepDiscount),
           ],
@@ -247,7 +243,10 @@ class _Stepper extends StatelessWidget {
           suffixIcon: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _ArrowButton(icon: Icons.keyboard_arrow_up, onTap: () => onStep(1)),
+              _ArrowButton(
+                icon: Icons.keyboard_arrow_up,
+                onTap: () => onStep(1),
+              ),
               _ArrowButton(
                 icon: Icons.keyboard_arrow_down,
                 onTap: () => onStep(-1),

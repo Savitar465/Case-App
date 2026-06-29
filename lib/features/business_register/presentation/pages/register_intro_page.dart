@@ -9,10 +9,17 @@ class RegisterIntroPage extends StatelessWidget {
 
   static const String routeName = '/register-business';
 
-  void _start(BuildContext context) {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(builder: (_) => const BusinessRegisterWizardPage()),
+  Future<void> _start(BuildContext context) async {
+    final navigator = Navigator.of(context);
+    // Push (don't replace) so the wizard's result bubbles up: when it pops
+    // `true` after publishing, we forward that to the Profile screen, which
+    // reloads and shows the new business immediately.
+    final created = await navigator.push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => const BusinessRegisterWizardPage(),
+      ),
     );
+    navigator.pop(created);
   }
 
   @override
@@ -68,11 +75,7 @@ class RegisterIntroPage extends StatelessWidget {
 }
 
 class _Benefit extends StatelessWidget {
-  const _Benefit({
-    required this.icon,
-    required this.color,
-    required this.text,
-  });
+  const _Benefit({required this.icon, required this.color, required this.text});
 
   final IconData icon;
   final Color color;

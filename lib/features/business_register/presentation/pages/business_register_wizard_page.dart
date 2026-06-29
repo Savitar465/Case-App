@@ -17,10 +17,9 @@ class BusinessRegisterWizardPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) =>
-          BusinessRegisterCubit(
-            repository: context.read<BusinessRegistrationRepository>(),
-          )..loadCategories(),
+      create: (_) => BusinessRegisterCubit(
+        repository: context.read<BusinessRegistrationRepository>(),
+      )..loadCategories(),
       child: const _WizardView(),
     );
   }
@@ -377,7 +376,9 @@ class _LocationStep extends StatelessWidget {
               ..clearSnackBars()
               ..showSnackBar(
                 const SnackBar(
-                  content: Text('La ubicación automática estará disponible pronto'),
+                  content: Text(
+                    'La ubicación automática estará disponible pronto',
+                  ),
                 ),
               );
           },
@@ -717,7 +718,9 @@ class _PhotosStep extends StatelessWidget {
                   ..clearSnackBars()
                   ..showSnackBar(
                     const SnackBar(
-                      content: Text('La carga de fotos estará disponible pronto'),
+                      content: Text(
+                        'La carga de fotos estará disponible pronto',
+                      ),
                     ),
                   );
               },

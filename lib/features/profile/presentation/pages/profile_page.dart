@@ -61,9 +61,7 @@ class _ProfileView extends StatelessWidget {
                   title: const Text('Iniciar sesión'),
                   onTap: () {
                     Navigator.of(sheetContext).pop();
-                    Navigator.of(
-                      context,
-                    ).pushNamed(LoginPage.routeName);
+                    Navigator.of(context).pushNamed(LoginPage.routeName);
                   },
                 )
               else
@@ -125,9 +123,7 @@ class _ProfileView extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                 children: [
-                  _TopBar(
-                    onMenu: () => _openMenu(context, overview.user),
-                  ),
+                  _TopBar(onMenu: () => _openMenu(context, overview.user)),
                   const SizedBox(height: 16),
                   ProfileHeader(
                     user: overview.user,
@@ -177,9 +173,9 @@ class _TopBar extends StatelessWidget {
       children: [
         Text(
           'Mi perfil',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
         ),
         IconButton(
           onPressed: onMenu,
@@ -264,10 +260,7 @@ class _OwnedSection extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         for (final business in businesses) ...[
-          OwnedBusinessRow(
-            business: business,
-            onTap: () => onOpen(business),
-          ),
+          OwnedBusinessRow(business: business, onTap: () => onOpen(business)),
           const SizedBox(height: 12),
         ],
         const SizedBox(height: 4),

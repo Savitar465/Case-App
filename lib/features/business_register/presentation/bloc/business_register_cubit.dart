@@ -102,12 +102,8 @@ class BusinessRegisterCubit extends Cubit<BusinessRegisterState> {
     emit(
       state.copyWith(
         draft: state.draft.copyWith(
-          services: state.draft.services
-              .where((s) => s.id != item.id)
-              .toList(),
-          products: state.draft.products
-              .where((p) => p.id != item.id)
-              .toList(),
+          services: state.draft.services.where((s) => s.id != item.id).toList(),
+          products: state.draft.products.where((p) => p.id != item.id).toList(),
         ),
       ),
     );
@@ -146,10 +142,7 @@ class BusinessRegisterCubit extends Cubit<BusinessRegisterState> {
       emit(state.copyWith(status: RegisterStatus.success, publishedId: id));
     } catch (error) {
       emit(
-        state.copyWith(
-          status: RegisterStatus.failure,
-          error: error.toString(),
-        ),
+        state.copyWith(status: RegisterStatus.failure, error: error.toString()),
       );
     }
   }
