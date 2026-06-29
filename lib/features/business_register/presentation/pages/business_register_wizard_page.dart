@@ -323,6 +323,8 @@ class _CategoryCard extends StatelessWidget {
     if (iconHex == null || iconHex.isEmpty) return Icons.storefront;
     try {
       final clean = iconHex.startsWith('0x') ? iconHex.substring(2) : iconHex;
+      // Code point is parsed at runtime, so it can't be const.
+      // ignore: non_const_argument_for_const_parameter
       return IconData(int.parse(clean, radix: 16), fontFamily: 'MaterialIcons');
     } catch (_) {
       return Icons.storefront;
