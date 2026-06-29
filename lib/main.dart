@@ -28,6 +28,7 @@ import 'features/offers/domain/repositories/offer_repository.dart';
 import 'features/reviews/data/datasources/remote/review_remote_data_source.dart';
 import 'features/reviews/data/repositories/review_repository_impl.dart';
 import 'features/reviews/domain/repositories/review_repository.dart';
+import 'features/welcome/presentation/pages/welcome_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -155,8 +156,9 @@ class _AppRoot extends StatelessWidget {
         ),
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
-          home: const MarketHomePage(),
+          home: const WelcomePage(),
           routes: {
+            WelcomePage.routeName: (_) => const WelcomePage(),
             MarketHomePage.routeName: (_) => const MarketHomePage(),
             LoginPage.routeName: (_) => const LoginPage(),
             SignupPage.routeName: (_) => const SignupPage(),

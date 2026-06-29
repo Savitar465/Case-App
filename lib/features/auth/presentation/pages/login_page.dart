@@ -20,6 +20,7 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscure = true;
+  bool _acceptedTerms = false;
 
   @override
   void dispose() {
@@ -30,6 +31,18 @@ class _LoginPageState extends State<LoginPage> {
 
   void _submit() {
     FocusScope.of(context).unfocus();
+    if (!_acceptedTerms) {
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Acepta los Términos y la Política de Privacidad para continuar',
+            ),
+          ),
+        );
+      return;
+    }
     if (_formKey.currentState!.validate()) {
       context.read<AuthBloc>().add(
         LoginSubmitted(
@@ -56,7 +69,6 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: Colors.white,
       body: BlocConsumer<AuthBloc, AuthState>(
@@ -81,30 +93,14 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const VikusAuthHeader(),
+                    const _LoginHero(),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
                       child: Form(
                         key: _formKey,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Text(
-                              'Iniciar sesión',
-                              textAlign: TextAlign.center,
-                              style: theme.textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Bienvenido de nuevo a tu ciudad',
-                              textAlign: TextAlign.center,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: Colors.black54,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
                             AuthTextField(
                               controller: _emailController,
                               hintText: 'Email',
@@ -150,7 +146,13 @@ class _LoginPageState extends State<LoginPage> {
                               onPressed: _submit,
                             ),
                             const SizedBox(height: 16),
-                            const LabeledDivider(label: 'o continúa con'),
+                            TermsCheckbox(
+                              value: _acceptedTerms,
+                              onChanged: (v) =>
+                                  setState(() => _acceptedTerms = v),
+                            ),
+                            const SizedBox(height: 16),
+                            const LabeledDivider(label: 'O continúa con'),
                             const SizedBox(height: 16),
                             GoogleButton(
                               onPressed: () =>
@@ -178,6 +180,42 @@ class _LoginPageState extends State<LoginPage> {
     final pattern = RegExp(r'^[\w.+-]+@[\w-]+\.[\w.-]+$');
     if (!pattern.hasMatch(email)) return 'Email inválido';
     return null;
+  }
+}
+
+class _LoginHero extends StatelessWidget {
+  const _LoginHero();
+
+  @override
+  Widget build(BuildContext context) {
+    final height = MediaQuery.sizeOf(context).height * 0.34;
+    return SizedBox(
+      height: height,
+      width: double.infinity,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/cover1.png',
+            fit: BoxFit.cover,
+            alignment: Alignment.topCenter,
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              height: 72,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Colors.white],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

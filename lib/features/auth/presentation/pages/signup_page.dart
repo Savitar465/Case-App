@@ -111,9 +111,13 @@ class _SignupPageState extends State<SignupPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const VikusAuthHeader(),
+                        Image.asset(
+                          'assets/images/login.png',
+                          width: double.infinity,
+                          fit: BoxFit.fitWidth,
+                        ),
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
                           child: Form(
                             key: _formKey,
                             child: Column(
