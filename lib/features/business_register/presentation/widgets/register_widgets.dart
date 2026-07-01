@@ -102,7 +102,10 @@ class WizardTextField extends StatelessWidget {
     this.filled = false,
     this.maxLines = 1,
     this.prefixIcon,
+    this.suffixIcon,
     this.onChanged,
+    this.onSubmitted,
+    this.textInputAction,
   });
 
   final TextEditingController? controller;
@@ -111,7 +114,10 @@ class WizardTextField extends StatelessWidget {
   final bool filled;
   final int maxLines;
   final Widget? prefixIcon;
+  final Widget? suffixIcon;
   final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
+  final TextInputAction? textInputAction;
 
   @override
   Widget build(BuildContext context) {
@@ -125,9 +131,12 @@ class WizardTextField extends StatelessWidget {
       keyboardType: keyboardType,
       maxLines: maxLines,
       onChanged: onChanged,
+      onSubmitted: onSubmitted,
+      textInputAction: textInputAction,
       decoration: InputDecoration(
         hintText: hintText,
         prefixIcon: prefixIcon,
+        suffixIcon: suffixIcon,
         filled: filled,
         fillColor: const Color(0xFFF7F7F7),
         contentPadding: const EdgeInsets.symmetric(

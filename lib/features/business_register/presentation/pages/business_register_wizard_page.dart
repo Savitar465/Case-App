@@ -1,7 +1,15 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/static_location_map.dart';
 import '../../../market/domain/entities/category.dart';
 import '../../domain/entities/catalog_item_draft.dart';
 import '../../domain/repositories/business_registration_repository.dart';
@@ -333,57 +341,185 @@ class _CategoryCard extends StatelessWidget {
 }
 
 // ── Step 3: location ───────────────────────────────────────────────────────
-class _LocationStep extends StatelessWidget {
+class _LocationStep extends StatefulWidget {
   const _LocationStep({required this.controller});
 
   final TextEditingController controller;
 
   @override
+  State<_LocationStep> createState() => _LocationStepState();
+}
+
+class _LocationStepState extends State<_LocationStep> {
+  /// Fallback camera target when no point is chosen yet: Santa Cruz de la
+  /// Sierra, Bolivia (matches the default +591 country code).
+  static const LatLng _fallbackCenter = LatLng(-17.7834, -63.1821);
+
+  final MapController _mapController = MapController();
+  bool _locating = false;
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
+  }
+
+  /// Persists a chosen coordinate and reverse-geocodes it into the address
+  /// field so the user sees a human-readable location.
+  Future<void> _selectPoint(LatLng point, {bool recenter = false}) async {
+    final cubit = context.read<BusinessRegisterCubit>();
+    cubit.setLocation(point.latitude, point.longitude);
+    if (recenter) _mapController.move(point, 16);
+
+    try {
+      final placemarks = await placemarkFromCoordinates(
+        point.latitude,
+        point.longitude,
+      );
+      if (!mounted || placemarks.isEmpty) return;
+      final address = _formatPlacemark(placemarks.first);
+      if (address.isEmpty) return;
+      widget.controller.text = address;
+      cubit.setAddress(address);
+    } catch (_) {
+      // Reverse geocoding is best-effort; the pin is already saved.
+    }
+  }
+
+  Future<void> _useCurrentLocation() async {
+    if (_locating) return;
+    setState(() => _locating = true);
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        _showMessage('Activa la ubicación del dispositivo para continuar.');
+        return;
+      }
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        _showMessage('Necesitamos permiso de ubicación para localizarte.');
+        return;
+      }
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+      if (!mounted) return;
+      await _selectPoint(
+        LatLng(position.latitude, position.longitude),
+        recenter: true,
+      );
+    } catch (_) {
+      _showMessage('No pudimos obtener tu ubicación. Inténtalo de nuevo.');
+    } finally {
+      if (mounted) setState(() => _locating = false);
+    }
+  }
+
+  Future<void> _searchAddress(String query) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return;
+    try {
+      final results = await locationFromAddress(trimmed);
+      if (!mounted || results.isEmpty) {
+        if (mounted) _showMessage('No encontramos esa dirección.');
+        return;
+      }
+      final match = results.first;
+      final point = LatLng(match.latitude, match.longitude);
+      context.read<BusinessRegisterCubit>().setLocation(
+        point.latitude,
+        point.longitude,
+      );
+      _mapController.move(point, 16);
+    } catch (_) {
+      if (mounted) _showMessage('No encontramos esa dirección.');
+    }
+  }
+
+  String _formatPlacemark(Placemark p) {
+    final parts = <String?>[
+      p.street,
+      p.subLocality,
+      p.locality,
+    ].where((part) => part != null && part.trim().isNotEmpty).cast<String>();
+    return parts.join(', ');
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  @override
   Widget build(BuildContext context) {
     final cubit = context.read<BusinessRegisterCubit>();
+    final draft = context.watch<BusinessRegisterCubit>().state.draft;
+    final point = (draft.latitude != null && draft.longitude != null)
+        ? LatLng(draft.latitude!, draft.longitude!)
+        : null;
+
     return ListView(
       children: [
         const StepTitle('¿Dónde está tu negocio?'),
         const SizedBox(height: 10),
         const StepSubtitle(
-          'Busca tu dirección para que los clientes puedan encontrarte.',
+          'Busca tu dirección o toca el mapa para colocar el pin donde estás.',
         ),
         const SizedBox(height: 16),
         WizardTextField(
-          controller: controller,
+          controller: widget.controller,
           hintText: 'Buscar dirección o zona',
           prefixIcon: const Icon(Icons.search, color: Colors.black45),
+          textInputAction: TextInputAction.search,
           onChanged: cubit.setAddress,
+          onSubmitted: _searchAddress,
         ),
         const SizedBox(height: 16),
         ClipRRect(
           borderRadius: BorderRadius.circular(16),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Image.asset(
-                'assets/images/map3d.png',
-                height: 220,
-                width: double.infinity,
-                fit: BoxFit.cover,
+          child: SizedBox(
+            height: 240,
+            child: FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: point ?? _fallbackCenter,
+                initialZoom: point != null ? 16 : 12,
+                onTap: (_, tapped) => _selectPoint(tapped),
               ),
-              const Icon(Icons.location_on, color: Colors.red, size: 40),
-            ],
+              children: [
+                TileLayer(
+                  urlTemplate: kOsmTileUrl,
+                  userAgentPackageName: kMapUserAgent,
+                ),
+                if (point != null)
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: point,
+                        width: 44,
+                        height: 44,
+                        alignment: Alignment.topCenter,
+                        child: const Icon(
+                          Icons.location_on,
+                          color: Colors.red,
+                          size: 44,
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 16),
         OutlinedButton.icon(
-          onPressed: () {
-            ScaffoldMessenger.of(context)
-              ..clearSnackBars()
-              ..showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'La ubicación automática estará disponible pronto',
-                  ),
-                ),
-              );
-          },
+          onPressed: _locating ? null : _useCurrentLocation,
           style: OutlinedButton.styleFrom(
             foregroundColor: Colors.black54,
             side: const BorderSide(color: Color(0xFFE0E0E0)),
@@ -392,8 +528,19 @@ class _LocationStep extends StatelessWidget {
               borderRadius: BorderRadius.circular(24),
             ),
           ),
-          icon: const Icon(Icons.my_location, color: AppColors.purple),
-          label: const Text('Usar mi ubicación actual'),
+          icon: _locating
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.purple,
+                  ),
+                )
+              : const Icon(Icons.my_location, color: AppColors.purple),
+          label: Text(
+            _locating ? 'Obteniendo ubicación…' : 'Usar mi ubicación actual',
+          ),
         ),
       ],
     );
@@ -698,12 +845,27 @@ class _TimeText extends StatelessWidget {
 class _PhotosStep extends StatelessWidget {
   const _PhotosStep();
 
+  Future<void> _pickPhotos(BuildContext context) async {
+    final cubit = context.read<BusinessRegisterCubit>();
+    try {
+      final picked = await ImagePicker().pickMultiImage(imageQuality: 80);
+      if (picked.isEmpty) return;
+      cubit.addPhotos(picked.map((image) => image.path).toList());
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          const SnackBar(content: Text('No se pudieron abrir las fotos.')),
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final cubit = context.read<BusinessRegisterCubit>();
     return BlocBuilder<BusinessRegisterCubit, BusinessRegisterState>(
       builder: (context, state) {
-        final count = state.draft.photoCount;
+        final photos = state.draft.photos;
         return ListView(
           children: [
             const StepTitle('¿Quieres agregar fotos de tu\nnegocio?'),
@@ -713,45 +875,110 @@ class _PhotosStep extends StatelessWidget {
               'generan mayor confianza de tus productos o servicios.',
             ),
             const SizedBox(height: 24),
-            InkWell(
-              onTap: () {
-                cubit.addPhotos(1);
-                ScaffoldMessenger.of(context)
-                  ..clearSnackBars()
-                  ..showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'La carga de fotos estará disponible pronto',
-                      ),
-                    ),
-                  );
-              },
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                height: 230,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.black38),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.add_a_photo_outlined, size: 56),
-                    const SizedBox(height: 16),
-                    Text(
-                      count == 0
-                          ? 'Toca para subir o arrastra tus fotos'
-                          : '$count foto(s) seleccionada(s)',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                  ],
-                ),
+            if (photos.isEmpty)
+              _PhotoDropzone(onTap: () => _pickPhotos(context))
+            else
+              _PhotoGrid(
+                photos: photos,
+                onAdd: () => _pickPhotos(context),
+                onRemove: context.read<BusinessRegisterCubit>().removePhoto,
               ),
-            ),
           ],
         );
       },
+    );
+  }
+}
+
+/// Large empty-state tile shown before any photo is picked.
+class _PhotoDropzone extends StatelessWidget {
+  const _PhotoDropzone({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        height: 230,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.black38),
+        ),
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.add_a_photo_outlined, size: 56),
+            SizedBox(height: 16),
+            Text(
+              'Toca para subir tus fotos',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Thumbnail grid of picked photos with an add tile and per-photo remove.
+class _PhotoGrid extends StatelessWidget {
+  const _PhotoGrid({
+    required this.photos,
+    required this.onAdd,
+    required this.onRemove,
+  });
+
+  final List<String> photos;
+  final VoidCallback onAdd;
+  final ValueChanged<String> onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.count(
+      crossAxisCount: 3,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisSpacing: 10,
+      mainAxisSpacing: 10,
+      children: [
+        for (final path in photos)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.file(File(path), fit: BoxFit.cover),
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: GestureDetector(
+                    onTap: () => onRemove(path),
+                    child: const CircleAvatar(
+                      radius: 12,
+                      backgroundColor: Colors.black54,
+                      child: Icon(Icons.close, size: 16, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        InkWell(
+          onTap: onAdd,
+          borderRadius: BorderRadius.circular(12),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.black38),
+            ),
+            child: const Icon(Icons.add_a_photo_outlined, size: 32),
+          ),
+        ),
+      ],
     );
   }
 }

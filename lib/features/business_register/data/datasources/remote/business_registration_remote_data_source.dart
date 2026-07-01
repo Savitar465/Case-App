@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
@@ -13,6 +15,8 @@ class BusinessRegistrationRemoteDataSource {
   static const String _schema = 'public';
   static const String _businessesTable = 'businesses';
   static const String _categoriesTable = 'categories';
+  static const String _imagesTable = 'business_images';
+  static const String _imagesBucket = 'vikus';
   static const Uuid _uuid = Uuid();
 
   Future<List<MarketCategory>> getCategories() async {
@@ -67,11 +71,57 @@ class BusinessRegistrationRemoteDataSource {
           .insert(payload)
           .select('id')
           .single();
-      return row['id'] as String;
+      final businessId = row['id'] as String;
+      await _uploadPhotos(businessId, draft.photos);
+      return businessId;
     } on PostgrestException catch (error) {
+      throw BusinessRegistrationException(error.message);
+    } on StorageException catch (error) {
       throw BusinessRegistrationException(error.message);
     }
   }
+
+  /// Uploads each picked photo to the `vikus` bucket and records a
+  /// `business_images` row. The first photo becomes the cover. Storage paths
+  /// (not public URLs) are stored, matching how reads resolve them.
+  Future<void> _uploadPhotos(String businessId, List<String> paths) async {
+    if (paths.isEmpty) return;
+    final rows = <Map<String, dynamic>>[];
+    for (var i = 0; i < paths.length; i++) {
+      final file = File(paths[i]);
+      final extension = _extensionOf(paths[i]);
+      final objectPath = '$businessId/${_uuid.v4()}.$extension';
+      await _client.storage
+          .from(_imagesBucket)
+          .upload(
+            objectPath,
+            file,
+            fileOptions: FileOptions(contentType: _contentType(extension)),
+          );
+      rows.add({
+        'business_id': businessId,
+        'url': objectPath,
+        'is_cover': i == 0,
+        'display_order': i,
+      });
+    }
+    await _client.schema(_schema).from(_imagesTable).insert(rows);
+  }
+
+  String _extensionOf(String path) {
+    final dot = path.lastIndexOf('.');
+    if (dot == -1 || dot == path.length - 1) return 'jpg';
+    final extension = path.substring(dot + 1).toLowerCase();
+    return extension.length > 4 ? 'jpg' : extension;
+  }
+
+  String _contentType(String extension) => switch (extension) {
+    'png' => 'image/png',
+    'webp' => 'image/webp',
+    'heic' => 'image/heic',
+    'gif' => 'image/gif',
+    _ => 'image/jpeg',
+  };
 
   String? _fullWhatsapp(BusinessDraft draft) {
     final number = draft.whatsapp.trim();
