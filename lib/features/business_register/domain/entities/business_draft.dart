@@ -19,7 +19,7 @@ class BusinessDraft extends Equatable {
     this.instagram = '',
     this.website = '',
     List<DaySchedule>? schedule,
-    this.photoCount = 0,
+    this.photos = const [],
     this.services = const [],
     this.products = const [],
   }) : schedule = schedule ?? DaySchedule.defaultWeek();
@@ -36,7 +36,10 @@ class BusinessDraft extends Equatable {
   final String instagram;
   final String website;
   final List<DaySchedule> schedule;
-  final int photoCount;
+
+  /// Local file paths of images picked for the business, in display order
+  /// (first is treated as the cover). Uploaded to storage on publish.
+  final List<String> photos;
   final List<CatalogItemDraft> services;
   final List<CatalogItemDraft> products;
 
@@ -53,7 +56,7 @@ class BusinessDraft extends Equatable {
     String? instagram,
     String? website,
     List<DaySchedule>? schedule,
-    int? photoCount,
+    List<String>? photos,
     List<CatalogItemDraft>? services,
     List<CatalogItemDraft>? products,
   }) {
@@ -70,7 +73,7 @@ class BusinessDraft extends Equatable {
       instagram: instagram ?? this.instagram,
       website: website ?? this.website,
       schedule: schedule ?? this.schedule,
-      photoCount: photoCount ?? this.photoCount,
+      photos: photos ?? this.photos,
       services: services ?? this.services,
       products: products ?? this.products,
     );
@@ -90,7 +93,7 @@ class BusinessDraft extends Equatable {
     instagram,
     website,
     schedule,
-    photoCount,
+    photos,
     services,
     products,
   ];

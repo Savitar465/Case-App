@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/contact_launcher.dart';
 import '../../../../core/widgets/full_screen_image_viewer.dart';
+import '../../../../core/widgets/static_location_map.dart';
 import '../../../items/domain/repositories/item_repository.dart';
 import '../../../items/presentation/bloc/item_list_cubit.dart';
 import '../../../items/presentation/pages/item_list_page.dart';
@@ -249,6 +250,13 @@ class _ContentCard extends StatelessWidget {
             iconColor: Colors.redAccent,
             text: business.address,
           ),
+          if (business.latitude != 0 || business.longitude != 0) ...[
+            const SizedBox(height: 12),
+            StaticLocationMap(
+              latitude: business.latitude,
+              longitude: business.longitude,
+            ),
+          ],
           const SizedBox(height: 6),
           _ScheduleLine(business: business),
           if (description != null && description.isNotEmpty) ...[

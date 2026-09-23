@@ -72,9 +72,17 @@ class BusinessRegisterCubit extends Cubit<BusinessRegisterState> {
     emit(state.copyWith(draft: state.draft.copyWith(schedule: schedule)));
   }
 
-  void addPhotos(int count) => emit(
+  void addPhotos(List<String> paths) => emit(
     state.copyWith(
-      draft: state.draft.copyWith(photoCount: state.draft.photoCount + count),
+      draft: state.draft.copyWith(photos: [...state.draft.photos, ...paths]),
+    ),
+  );
+
+  void removePhoto(String path) => emit(
+    state.copyWith(
+      draft: state.draft.copyWith(
+        photos: state.draft.photos.where((p) => p != path).toList(),
+      ),
     ),
   );
 
@@ -116,7 +124,9 @@ class BusinessRegisterCubit extends Cubit<BusinessRegisterState> {
     return switch (state.step) {
       RegisterStep.name => draft.name.trim().isNotEmpty,
       RegisterStep.category => draft.category != null,
-      RegisterStep.location => draft.address.trim().isNotEmpty,
+      RegisterStep.location =>
+        draft.address.trim().isNotEmpty ||
+            (draft.latitude != null && draft.longitude != null),
       RegisterStep.contact => draft.whatsapp.trim().isNotEmpty,
       RegisterStep.schedule => true,
       RegisterStep.photos => true,
