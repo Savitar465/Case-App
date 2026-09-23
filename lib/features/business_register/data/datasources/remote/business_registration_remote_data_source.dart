@@ -1,11 +1,13 @@
 import 'dart:io';
 
+import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../../market/data/models/category_model.dart';
 import '../../../../market/domain/entities/category.dart';
 import '../../../domain/entities/business_draft.dart';
+import '../../../domain/entities/catalog_item_draft.dart';
 
 class BusinessRegistrationRemoteDataSource {
   BusinessRegistrationRemoteDataSource(this._client);
@@ -16,6 +18,10 @@ class BusinessRegistrationRemoteDataSource {
   static const String _businessesTable = 'businesses';
   static const String _categoriesTable = 'categories';
   static const String _imagesTable = 'business_images';
+  static const String _itemsTable = 'items';
+  static const String _itemImagesTable = 'item_images';
+  static const String _offersTable = 'offers';
+  static const String _currency = 'BOB';
   static const String _imagesBucket = 'vikus';
   static const Uuid _uuid = Uuid();
 
@@ -73,6 +79,12 @@ class BusinessRegistrationRemoteDataSource {
           .single();
       final businessId = row['id'] as String;
       await _uploadPhotos(businessId, draft.photos);
+      await _insertCatalog(
+        businessId: businessId,
+        userId: user.id,
+        categoryId: draft.category?.id,
+        items: [...draft.services, ...draft.products],
+      );
       return businessId;
     } on PostgrestException catch (error) {
       throw BusinessRegistrationException(error.message);
@@ -106,6 +118,116 @@ class BusinessRegistrationRemoteDataSource {
       });
     }
     await _client.schema(_schema).from(_imagesTable).insert(rows);
+  }
+
+  /// Inserts the services/products added in the wizard, their photos, and a
+  /// row in `offers` for each flash offer. Item ids are generated client-side
+  /// so images and offers can reference them without a round-trip per item.
+  Future<void> _insertCatalog({
+    required String businessId,
+    required String userId,
+    required String? categoryId,
+    required List<CatalogItemDraft> items,
+  }) async {
+    if (items.isEmpty) return;
+    final now = DateTime.now().toIso8601String();
+
+    final itemRows = [
+      for (final item in items)
+        <String, dynamic>{
+          'id': item.id,
+          'business_id': businessId,
+          'type': item.kind.name,
+          'name': item.name,
+          'description': item.description,
+          'price': item.price ?? 0,
+          'currency': _currency,
+          'category_id': ?categoryId,
+          'stock': item.quantity,
+          'is_active': true,
+          'created_by': userId,
+          'created_at': now,
+        },
+    ];
+    await _client.schema(_schema).from(_itemsTable).insert(itemRows);
+
+    final photoPaths = <String, String>{};
+    for (final item in items) {
+      final path = item.photoPath;
+      if (path == null) continue;
+      final extension = _extensionOf(path);
+      final objectPath = '$businessId/items/${item.id}.$extension';
+      await _client.storage
+          .from(_imagesBucket)
+          .upload(
+            objectPath,
+            File(path),
+            fileOptions: FileOptions(contentType: _contentType(extension)),
+          );
+      photoPaths[item.id] = objectPath;
+    }
+    if (photoPaths.isNotEmpty) {
+      await _client.schema(_schema).from(_itemImagesTable).insert([
+        for (final entry in photoPaths.entries)
+          {'item_id': entry.key, 'url': entry.value, 'display_order': 0},
+      ]);
+    }
+
+    final offerRows = [
+      for (final item in items)
+        if (item.offerType == OfferType.flash && item.flashOffer != null)
+          _offerRow(
+            businessId: businessId,
+            userId: userId,
+            item: item,
+            offer: item.flashOffer!,
+            imagePath: photoPaths[item.id],
+            createdAt: now,
+          ),
+    ];
+    if (offerRows.isNotEmpty) {
+      await _client.schema(_schema).from(_offersTable).insert(offerRows);
+    }
+  }
+
+  /// Maps a flash offer onto the existing `offers` shape: a `fixed_amount`
+  /// discount of (normal price − flash price), so current offer views render
+  /// it unchanged, plus the item link and daily window/repeat days.
+  Map<String, dynamic> _offerRow({
+    required String businessId,
+    required String userId,
+    required CatalogItemDraft item,
+    required FlashOffer offer,
+    required String? imagePath,
+    required String createdAt,
+  }) {
+    String timeOf(TimeOfDay t) =>
+        '${t.hour.toString().padLeft(2, '0')}:'
+        '${t.minute.toString().padLeft(2, '0')}:00';
+    DateTime at(DateTime day, TimeOfDay t) =>
+        DateTime(day.year, day.month, day.day, t.hour, t.minute);
+
+    final discount = ((item.price ?? 0) - (offer.price ?? 0)).clamp(
+      0,
+      double.infinity,
+    );
+    return {
+      'business_id': businessId,
+      'item_id': item.id,
+      'title': item.name,
+      'description': item.description ?? '',
+      'discount_type': 'fixed_amount',
+      'discount_value': discount,
+      'start_date': at(offer.startDate, offer.startTime).toIso8601String(),
+      'end_date': at(offer.endDate, offer.endTime).toIso8601String(),
+      'start_time': timeOf(offer.startTime),
+      'end_time': timeOf(offer.endTime),
+      'repeat_days': offer.repeatWeekdays.toList()..sort(),
+      'image_url': ?imagePath,
+      'is_active': true,
+      'created_by': userId,
+      'created_at': createdAt,
+    };
   }
 
   String _extensionOf(String path) {
