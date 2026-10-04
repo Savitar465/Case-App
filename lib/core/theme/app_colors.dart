@@ -16,4 +16,13 @@ abstract final class AppColors {
 
   /// Star rating amber.
   static const Color star = Color(0xFFFFB400);
+
+  /// Soft lavender page background used on the home screen.
+  static const Color pageBackground = Color(0xFFF8F5FC);
+
+  /// Red used for location pins and "oferta" badges.
+  static const Color offerRed = Color(0xFFE53935);
+
+  /// Orange used for the fire icon and the "OFERTA" / "PRO" pills.
+  static const Color flame = Color(0xFFFF7A1A);
 }
