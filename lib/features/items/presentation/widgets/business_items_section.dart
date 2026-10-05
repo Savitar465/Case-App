@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
+import '../../../favorites/domain/entities/favorite_kind.dart';
+import '../../../favorites/presentation/widgets/favorite_button.dart';
 import '../../domain/entities/item.dart';
+import '../../domain/entities/item_type.dart';
 import '../../domain/repositories/item_repository.dart';
 import '../bloc/item_list_cubit.dart';
 
@@ -203,7 +207,7 @@ class _Pill extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? Colors.white : Colors.black87,
+            color: selected ? Colors.white : context.palette.textPrimary,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
           ),
         ),
@@ -245,7 +249,7 @@ class ItemRow extends StatelessWidget {
     final description = item.description;
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.purpleSurface,
+        color: context.palette.purpleSurface,
         borderRadius: BorderRadius.circular(14),
       ),
       padding: const EdgeInsets.all(8),
@@ -287,7 +291,7 @@ class ItemRow extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.black54,
+                      color: context.palette.textSecondary,
                     ),
                   ),
                 ],
@@ -300,6 +304,13 @@ class ItemRow extends StatelessWidget {
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w700,
             ),
+          ),
+          FavoriteButton(
+            kind: item.type == ItemType.service
+                ? FavoriteKind.service
+                : FavoriteKind.product,
+            targetId: item.id,
+            onSurface: false,
           ),
         ],
       ),
@@ -324,9 +335,13 @@ class _CoverPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.white,
+      color: context.palette.mutedFill,
       alignment: Alignment.center,
-      child: const Icon(Icons.image_outlined, size: 24, color: Colors.black38),
+      child: Icon(
+        Icons.image_outlined,
+        size: 24,
+        color: context.palette.textMuted,
+      ),
     );
   }
 }

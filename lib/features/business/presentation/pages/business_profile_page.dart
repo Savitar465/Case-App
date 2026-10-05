@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../../../core/utils/contact_launcher.dart';
 import '../../../../core/widgets/full_screen_image_viewer.dart';
 import '../../../../core/widgets/static_location_map.dart';
@@ -100,7 +101,7 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
   Widget build(BuildContext context) {
     final whatsapp = _business.whatsapp;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.page,
       body: MultiBlocProvider(
         providers: [
           BlocProvider<ReviewListCubit>.value(value: _reviewListCubit),
@@ -228,8 +229,8 @@ class _ContentCard extends StatelessWidget {
     final theme = Theme.of(context);
     final description = business.description;
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: context.palette.page,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
@@ -265,7 +266,7 @@ class _ContentCard extends StatelessWidget {
               '"$description"',
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontStyle: FontStyle.italic,
-                color: Colors.black54,
+                color: context.palette.textSecondary,
               ),
             ),
           ],
@@ -350,7 +351,7 @@ class _RatingSummary extends StatelessWidget {
               Text(
                 'Sin opiniones aún',
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.black45,
+                  color: context.palette.textTertiary,
                 ),
               ),
             ],
@@ -369,7 +370,9 @@ class _RatingSummary extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               '(${stats.count} ${stats.count == 1 ? 'opinión' : 'opiniones'})',
-              style: theme.textTheme.bodySmall?.copyWith(color: Colors.black45),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: context.palette.textTertiary,
+              ),
             ),
           ],
         );
@@ -490,7 +493,7 @@ class _ReviewsSection extends StatelessWidget {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.page,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -530,7 +533,7 @@ class _ReviewsSection extends StatelessWidget {
                 child: Text(
                   'Aún no hay opiniones. ¡Sé el primero en opinar!',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: Colors.black54,
+                    color: context.palette.textSecondary,
                   ),
                 ),
               )
@@ -627,7 +630,9 @@ class _SectionLabel extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: theme.textTheme.bodyMedium?.copyWith(color: Colors.black87),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: context.palette.textPrimary,
+            ),
           ),
         ),
       ],
@@ -647,9 +652,9 @@ class _ReviewCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFECECEC)),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -683,7 +688,7 @@ class _ReviewCard extends StatelessWidget {
                     Text(
                       _timeAgo(review.createdAt),
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.black45,
+                        color: context.palette.textTertiary,
                       ),
                     ),
                   ],
@@ -697,7 +702,7 @@ class _ReviewCard extends StatelessWidget {
             Text(
               comment,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: Colors.black87,
+                color: context.palette.textPrimary,
               ),
             ),
           ],
@@ -776,7 +781,11 @@ class _SocialRow extends StatelessWidget {
         for (final entry in entries)
           IconButton(
             onPressed: entry.onTap,
-            icon: Icon(entry.icon, color: Colors.black87, size: 26),
+            icon: Icon(
+              entry.icon,
+              color: context.palette.textPrimary,
+              size: 26,
+            ),
           ),
       ],
     );
@@ -874,9 +883,13 @@ class _BusinessImagesState extends State<_BusinessImages> {
         }
         final images = snapshot.data ?? const <BusinessImage>[];
         if (images.isEmpty) {
-          return const _ImagePlaceholder(
+          return _ImagePlaceholder(
             height: _height,
-            child: Icon(Icons.storefront, size: 64, color: Colors.black38),
+            child: Icon(
+              Icons.storefront,
+              size: 64,
+              color: context.palette.textMuted,
+            ),
           );
         }
         return SizedBox(
@@ -895,12 +908,12 @@ class _BusinessImagesState extends State<_BusinessImages> {
                       url,
                       fit: BoxFit.cover,
                       width: double.infinity,
-                      errorBuilder: (_, _, _) => const _ImagePlaceholder(
+                      errorBuilder: (_, _, _) => _ImagePlaceholder(
                         height: _height,
                         child: Icon(
                           Icons.storefront,
                           size: 64,
-                          color: Colors.black38,
+                          color: context.palette.textMuted,
                         ),
                       ),
                     ),
@@ -964,7 +977,7 @@ class _ImagePlaceholder extends StatelessWidget {
     return Container(
       height: height,
       width: double.infinity,
-      color: const Color(0xFFE6E6E6),
+      color: context.palette.mutedFill,
       alignment: Alignment.center,
       child: child,
     );
@@ -1011,7 +1024,7 @@ class _ScheduleLine extends StatelessWidget {
                   TextSpan(
                     text: '  ·  $detail',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.black54,
+                      color: context.palette.textSecondary,
                     ),
                   ),
               ],

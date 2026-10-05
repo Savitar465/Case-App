@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 import '../../../market/presentation/pages/market_home_page.dart';
 
@@ -78,7 +79,7 @@ class _WelcomePageState extends State<WelcomePage> {
     final size = MediaQuery.sizeOf(context);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.page,
       body: Column(
         children: [
           // ── Hero carousel ─────────────────────────────────────────────
@@ -107,11 +108,11 @@ class _WelcomePageState extends State<WelcomePage> {
                   child: IgnorePointer(
                     child: Container(
                       height: 80,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
-                          colors: [Colors.transparent, Colors.white],
+                          colors: [Colors.transparent, context.palette.page],
                         ),
                       ),
                     ),
@@ -144,7 +145,7 @@ class _WelcomePageState extends State<WelcomePage> {
                         'Explora tiendas, restaurantes,\nservicios y más en tu zona.',
                         textAlign: TextAlign.center,
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: Colors.black54,
+                          color: context.palette.textSecondary,
                           height: 1.4,
                         ),
                       ),
@@ -198,7 +199,7 @@ class _PageDots extends StatelessWidget {
             height: 8,
             width: isActive ? 22 : 8,
             decoration: BoxDecoration(
-              color: isActive ? AppColors.purple : const Color(0xFFE0D6F2),
+              color: isActive ? AppColors.purple : context.palette.border,
               borderRadius: BorderRadius.circular(4),
             ),
           ),
@@ -251,15 +252,15 @@ class _GuestButton extends StatelessWidget {
       child: OutlinedButton.icon(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          foregroundColor: const Color(0xFF1E1B2E),
-          side: const BorderSide(color: Color(0xFFE0D6F2)),
+          foregroundColor: context.palette.textPrimary,
+          side: BorderSide(color: context.palette.border),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        icon: const CircleAvatar(
+        icon: CircleAvatar(
           radius: 14,
-          backgroundColor: AppColors.purpleSurface,
+          backgroundColor: context.palette.purpleSurface,
           child: Icon(Icons.person_outline, size: 18, color: AppColors.purple),
         ),
         label: const Text(

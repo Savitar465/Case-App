@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:market_app/features/auth/presentation/bloc/auth_bloc.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../../market/presentation/pages/market_home_page.dart';
 import '../widgets/auth_widgets.dart';
 
@@ -54,12 +55,19 @@ class _SignupPageState extends State<SignupPage> {
     }
   }
 
-  void _comingSoon(String feature) {
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(
-        SnackBar(content: Text('$feature estará disponible pronto')),
-      );
+  void _signUpWithGoogle() {
+    if (!_acceptedTerms) {
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Debes aceptar los Términos y Condiciones'),
+          ),
+        );
+      return;
+    }
+    // Google accounts are created on first sign-in, so this is the same flow.
+    context.read<AuthBloc>().add(const GoogleSignInRequested());
   }
 
   Future<void> _showConfirmationDialog(String message) async {
@@ -83,7 +91,7 @@ class _SignupPageState extends State<SignupPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.page,
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthError) {
@@ -135,7 +143,7 @@ class _SignupPageState extends State<SignupPage> {
                                   'de tu ciudad',
                                   textAlign: TextAlign.center,
                                   style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: Colors.black54,
+                                    color: context.palette.textSecondary,
                                   ),
                                 ),
                                 const SizedBox(height: 22),
@@ -186,10 +194,7 @@ class _SignupPageState extends State<SignupPage> {
                                   onPressed: _submit,
                                 ),
                                 const SizedBox(height: 14),
-                                GoogleButton(
-                                  onPressed: () =>
-                                      _comingSoon('El registro con Google'),
-                                ),
+                                GoogleButton(onPressed: _signUpWithGoogle),
                                 const SizedBox(height: 18),
                                 _LoginPrompt(
                                   onTap: () => Navigator.of(context).maybePop(),
@@ -207,7 +212,7 @@ class _SignupPageState extends State<SignupPage> {
                     child: IconButton(
                       onPressed: () => Navigator.of(context).maybePop(),
                       icon: const Icon(Icons.chevron_left, size: 28),
-                      color: Colors.black54,
+                      color: context.palette.textSecondary,
                     ),
                   ),
                 ],

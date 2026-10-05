@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../domain/entities/profile_business.dart';
 import '../widgets/profile_widgets.dart';
 
@@ -25,11 +26,11 @@ class BusinessManagementPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.page,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.palette.page,
         elevation: 0,
-        foregroundColor: Colors.black87,
+        foregroundColor: context.palette.textPrimary,
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
@@ -108,9 +109,9 @@ class _Header extends StatelessWidget {
                       business.address,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12.5,
-                        color: Colors.black54,
+                        color: context.palette.textSecondary,
                       ),
                     ),
                   ),
@@ -219,9 +220,9 @@ class _StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFEDE7F6)),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -235,7 +236,10 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             stat.label,
-            style: const TextStyle(fontSize: 12, color: Colors.black54),
+            style: TextStyle(
+              fontSize: 12,
+              color: context.palette.textSecondary,
+            ),
           ),
         ],
       ),
@@ -305,9 +309,9 @@ class _QuickAction extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.palette.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFEDE7F6)),
+          border: Border.all(color: context.palette.border),
         ),
         child: Column(
           children: [
@@ -350,9 +354,9 @@ class _ManageList extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.palette.surface,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFEDE7F6)),
+                border: Border.all(color: context.palette.border),
               ),
               child: Row(
                 children: [
@@ -367,7 +371,7 @@ class _ManageList extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const Icon(Icons.chevron_right, color: Colors.black38),
+                  Icon(Icons.chevron_right, color: context.palette.textMuted),
                 ],
               ),
             ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_palette.dart';
 import '../widgets/register_widgets.dart';
 import 'business_register_wizard_page.dart';
 
@@ -25,11 +26,11 @@ class RegisterIntroPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.page,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.palette.page,
         elevation: 0,
-        foregroundColor: Colors.black87,
+        foregroundColor: context.palette.textPrimary,
       ),
       body: SafeArea(
         child: Padding(
@@ -46,9 +47,9 @@ class RegisterIntroPage extends StatelessWidget {
                 color: Colors.deepOrange,
                 text: 'Haz visible tu negocio',
               ),
-              const _Benefit(
+              _Benefit(
                 icon: Icons.chat_bubble_outline,
-                color: Colors.black87,
+                color: context.palette.textPrimary,
                 text: 'Conecta con clientes por WhatsApp y redes',
               ),
               const _Benefit(

@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../../../core/widgets/static_location_map.dart';
 import '../../../market/domain/entities/category.dart';
 import '../../domain/entities/catalog_item_draft.dart';
@@ -87,7 +88,7 @@ class _WizardViewState extends State<_WizardView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.page,
       body: SafeArea(
         child: BlocConsumer<BusinessRegisterCubit, BusinessRegisterState>(
           listener: (context, state) {
@@ -194,8 +195,12 @@ class _NameStep extends StatelessWidget {
           child: Container(
             width: 130,
             height: 130,
-            decoration: const BoxDecoration(
-              color: Color(0xFFFBE9DD),
+            decoration: BoxDecoration(
+              // Peach halo; a translucent orange keeps the glow without a
+              // bright disc on the dark theme.
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFFB5470B).withValues(alpha: 0.22)
+                  : const Color(0xFFFBE9DD),
               shape: BoxShape.circle,
             ),
             alignment: Alignment.center,
@@ -203,12 +208,14 @@ class _NameStep extends StatelessWidget {
               width: 76,
               height: 76,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.palette.surface,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.storefront,
-                color: Color(0xFFB5470B),
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFFF08A4B)
+                    : const Color(0xFFB5470B),
                 size: 40,
               ),
             ),
@@ -291,16 +298,18 @@ class _CategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.purple : Colors.black87;
+    final color = selected ? AppColors.purple : context.palette.textPrimary;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
         decoration: BoxDecoration(
-          color: selected ? AppColors.purpleSurface : const Color(0xFFFAFAFA),
+          color: selected
+              ? context.palette.purpleSurface
+              : context.palette.mutedFill,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: selected ? AppColors.purple : const Color(0xFFCFC4C9),
+            color: selected ? AppColors.purple : context.palette.neutralBorder,
             width: selected ? 2 : 1,
           ),
         ),
@@ -475,7 +484,7 @@ class _LocationStepState extends State<_LocationStep> {
         WizardTextField(
           controller: widget.controller,
           hintText: 'Buscar dirección o zona',
-          prefixIcon: const Icon(Icons.search, color: Colors.black45),
+          prefixIcon: Icon(Icons.search, color: context.palette.textTertiary),
           textInputAction: TextInputAction.search,
           onChanged: cubit.setAddress,
           onSubmitted: _searchAddress,
@@ -521,8 +530,8 @@ class _LocationStepState extends State<_LocationStep> {
         OutlinedButton.icon(
           onPressed: _locating ? null : _useCurrentLocation,
           style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.black54,
-            side: const BorderSide(color: Color(0xFFE0E0E0)),
+            foregroundColor: context.palette.textSecondary,
+            side: BorderSide(color: context.palette.neutralBorder),
             minimumSize: const Size.fromHeight(48),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(24),
@@ -589,7 +598,7 @@ class _ContactStep extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: kFieldBorder),
+                border: Border.all(color: context.palette.border),
               ),
               child: const Text(
                 '+591',
@@ -762,7 +771,7 @@ class _DayCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black26),
+        border: Border.all(color: context.palette.faint),
       ),
       child: Column(
         children: [
@@ -780,7 +789,9 @@ class _DayCard extends StatelessWidget {
               Text(
                 isOpen ? 'Abierto' : 'Cerrado',
                 style: TextStyle(
-                  color: isOpen ? const Color(0xFF22C55E) : Colors.black45,
+                  color: isOpen
+                      ? Color(0xFF22C55E)
+                      : context.palette.textTertiary,
                   fontWeight: FontWeight.w800,
                   fontSize: 18,
                 ),
@@ -831,9 +842,9 @@ class _TimeText extends StatelessWidget {
       onTap: onTap,
       child: Text(
         value,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 22,
-          color: Colors.black54,
+          color: context.palette.textSecondary,
           decoration: TextDecoration.underline,
         ),
       ),
@@ -905,7 +916,7 @@ class _PhotoDropzone extends StatelessWidget {
         height: 230,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.black38),
+          border: Border.all(color: context.palette.textMuted),
         ),
         child: const Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -973,7 +984,7 @@ class _PhotoGrid extends StatelessWidget {
           child: DecoratedBox(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.black38),
+              border: Border.all(color: context.palette.textMuted),
             ),
             child: const Icon(Icons.add_a_photo_outlined, size: 32),
           ),
@@ -1071,7 +1082,7 @@ class _AddRow extends StatelessWidget {
                 ),
               ),
             ),
-            const Icon(Icons.chevron_right, color: Colors.black38),
+            Icon(Icons.chevron_right, color: context.palette.textMuted),
           ],
         ),
       ),

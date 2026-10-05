@@ -32,6 +32,12 @@ class _FakeAuthRepository implements AuthRepository {
 
   @override
   Future<AuthSession?> restoreSession() async => null;
+
+  @override
+  Future<void> signInWithGoogle() async {}
+
+  @override
+  Stream<AuthSession> watchSignIns() => const Stream.empty();
 }
 
 class _FakeBusinessRepository implements BusinessRepository {

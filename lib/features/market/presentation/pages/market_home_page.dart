@@ -1,15 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:market_app/core/theme/app_colors.dart';
-import 'package:market_app/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:market_app/features/profile/presentation/pages/profile_page.dart';
-import 'package:market_app/features/auth/presentation/pages/login_page.dart';
-import 'package:market_app/features/business/domain/repositories/business_repository.dart';
-import 'package:market_app/features/business/presentation/pages/business_profile_page.dart';
+import 'package:market_app/features/favorites/presentation/bloc/favorites_cubit.dart';
+import 'package:market_app/features/favorites/presentation/pages/favorites_page.dart';
 import 'package:market_app/features/market/domain/entities/business.dart';
-import 'package:market_app/features/market/domain/entities/category.dart';
 import 'package:market_app/features/market/domain/repositories/market_repository.dart';
 import 'package:market_app/features/market/presentation/bloc/market_cubit.dart';
+import 'package:market_app/features/market/presentation/widgets/business_cards.dart';
+import 'package:market_app/features/market/presentation/widgets/category_strip.dart';
+import 'package:market_app/features/market/presentation/widgets/filter_chips_row.dart';
+import 'package:market_app/features/market/presentation/widgets/home_bottom_nav.dart';
+import 'package:market_app/features/market/presentation/widgets/home_header.dart';
+import 'package:market_app/features/market/presentation/widgets/offers_carousel.dart';
+import 'package:market_app/features/profile/presentation/pages/profile_page.dart';
+
+import '../../../../core/theme/app_palette.dart';
 
 class MarketHomePage extends StatefulWidget {
   const MarketHomePage({super.key});
@@ -30,308 +37,301 @@ class _MarketHomePageState extends State<MarketHomePage> {
           MarketCubit(repository: context.read<MarketRepository>())
             ..initialize(),
       child: Scaffold(
+        backgroundColor: context.palette.pageTinted,
         body: IndexedStack(
           index: _selectedIndex,
           children: const [
             _HomeView(),
             Center(child: Text('Ofertas (Próximamente)')),
-            Center(child: Text('Favoritos (Próximamente)')),
+            FavoritesPage(),
             ProfilePage(),
           ],
         ),
-        bottomNavigationBar: BottomNavigationBar(
+        bottomNavigationBar: HomeBottomNav(
           currentIndex: _selectedIndex,
-          onTap: (index) => setState(() => _selectedIndex = index),
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: AppColors.purple,
-          unselectedItemColor: Colors.black54,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'Inicio',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.local_fire_department_outlined),
-              activeIcon: Icon(Icons.local_fire_department),
-              label: 'Ofertas',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.favorite_outline),
-              activeIcon: Icon(Icons.favorite),
-              label: 'Favoritos',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Mi perfil',
-            ),
-          ],
+          onTap: (index) {
+            // Follows can also change from the business profile; reload so
+            // the counts are current whenever the tab is opened.
+            if (index == 2 && index != _selectedIndex) {
+              context.read<FavoritesCubit>().refresh();
+            }
+            setState(() => _selectedIndex = index);
+          },
         ),
       ),
     );
   }
 }
 
-class _HomeView extends StatelessWidget {
+class _HomeView extends StatefulWidget {
   const _HomeView();
 
-  void _logout(BuildContext context) {
-    context.read<AuthBloc>().add(const LogoutRequested());
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const LoginPage()));
+  @override
+  State<_HomeView> createState() => _HomeViewState();
+}
+
+class _HomeViewState extends State<_HomeView> {
+  /// How many businesses appear above the "Negocios destacados" row.
+  static const int _nearbyCount = 3;
+
+  @override
+  void initState() {
+    super.initState();
+    _locate(userInitiated: false);
+  }
+
+  /// Best-effort: feeds the user's position (for distances) and region name
+  /// (for the header) into the cubit. Silent unless the user asked for it.
+  Future<void> _locate({required bool userInitiated}) async {
+    final cubit = context.read<MarketCubit>();
+    final messenger = ScaffoldMessenger.of(context);
+    void explain(String message) {
+      if (userInitiated) {
+        messenger.showSnackBar(SnackBar(content: Text(message)));
+      }
+    }
+
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        explain('Activa la ubicación del dispositivo para ver distancias.');
+        return;
+      }
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        explain('Necesitamos permiso de ubicación para ver distancias.');
+        return;
+      }
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(seconds: 15),
+        ),
+      );
+      String? label;
+      try {
+        final places = await placemarkFromCoordinates(
+          position.latitude,
+          position.longitude,
+        );
+        if (places.isNotEmpty) {
+          final place = places.first;
+          label = [place.administrativeArea, place.locality]
+              .whereType<String>()
+              .map((s) => s.replaceFirst('Departamento de ', '').trim())
+              .firstWhere((s) => s.isNotEmpty, orElse: () => '');
+          if (label.isEmpty) label = null;
+        }
+      } catch (error) {
+        // Reverse geocoding is cosmetic; keep the default label.
+        debugPrint('Home reverse geocoding failed: $error');
+      }
+      if (cubit.isClosed) return;
+      cubit.setUserLocation(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        label: label,
+      );
+    } catch (error) {
+      debugPrint('Home location lookup failed: $error');
+      explain('No pudimos obtener tu ubicación.');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: RefreshIndicator(
-        onRefresh: () => context.read<MarketCubit>().refresh(),
-        child: CustomScrollView(
-          slivers: [
-            // 1. Barra superior: Ubicación y Notificaciones
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Ubicación actual',
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.location_on,
-                              color: Colors.red,
-                              size: 18,
-                            ),
-                            SizedBox(width: 4),
-                            Text(
-                              'Tu Ciudad, Calle 123',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                      ],
+    return BlocListener<MarketCubit, MarketState>(
+      listenWhen: (prev, curr) =>
+          curr.error != null && prev.error != curr.error,
+      listener: (context, state) => ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(state.error!))),
+      child: SafeArea(
+        bottom: false,
+        child: RefreshIndicator(
+          color: AppColors.purple,
+          onRefresh: () => context.read<MarketCubit>().refresh(),
+          child: BlocBuilder<MarketCubit, MarketState>(
+            builder: (context, state) {
+              final visible = state.visibleBusinesses;
+              final featured = state.featuredBusinesses;
+              final withOffers = state.businessIdsWithOffers;
+              final cubit = context.read<MarketCubit>();
+
+              Widget nearbyCard(Business business) => NearbyBusinessCard(
+                business: business,
+                distanceMeters: state.distanceTo(business),
+                hasOffer: withOffers.contains(business.id),
+              );
+
+              return CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: HomeHeader(
+                      onLocationTap: () => _locate(userInitiated: true),
                     ),
-                    Row(
-                      children: [
-                        IconButton(
-                          onPressed: () {},
-                          icon: const Badge(
-                            child: Icon(Icons.notifications_none_outlined),
+                  ),
+                  const SliverToBoxAdapter(child: HomeSearchField()),
+                  const SliverToBoxAdapter(child: SizedBox(height: 8)),
+                  const SliverToBoxAdapter(child: CategoryStrip()),
+                  if (state.offers.isNotEmpty) ...[
+                    const SliverToBoxAdapter(
+                      child: HomeSectionTitle(
+                        title: 'Ofertas cerca de ti',
+                        icon: Icons.local_fire_department,
+                        iconColor: AppColors.flame,
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: OffersCarousel(offers: state.offers),
+                    ),
+                  ],
+                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                  SliverToBoxAdapter(
+                    child: FilterChipsRow(
+                      onDistanceUnavailable: () => _locate(userInitiated: true),
+                    ),
+                  ),
+                  const SliverToBoxAdapter(
+                    child: HomeSectionTitle(
+                      title: 'Negocios cerca de ti',
+                      icon: Icons.location_on,
+                      iconColor: AppColors.offerRed,
+                    ),
+                  ),
+                  if (state.isLoading && state.businesses.isEmpty)
+                    const SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.all(32),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.purple,
                           ),
                         ),
-                        IconButton(
-                          tooltip: 'Cerrar sesión',
-                          onPressed: () => _logout(context),
-                          icon: const Icon(Icons.logout),
+                      ),
+                    )
+                  else if (visible.isEmpty)
+                    SliverToBoxAdapter(
+                      child: _EmptyResults(
+                        hasFilters:
+                            state.hasActiveFilters ||
+                            state.searchQuery.isNotEmpty,
+                        onClear: state.hasActiveFilters
+                            ? cubit.clearFilters
+                            : null,
+                      ),
+                    )
+                  else ...[
+                    SliverList.list(
+                      children: [
+                        for (final business in visible.take(_nearbyCount))
+                          nearbyCard(business),
+                      ],
+                    ),
+                    if (featured.isNotEmpty) ...[
+                      const SliverToBoxAdapter(
+                        child: HomeSectionTitle(
+                          title: 'Negocios destacados',
+                          trailing: _ProBadge(),
                         ),
+                      ),
+                      SliverToBoxAdapter(
+                        child: SizedBox(
+                          height: 198,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                            itemCount: featured.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(width: 12),
+                            itemBuilder: (context, index) =>
+                                FeaturedBusinessCard(
+                                  business: featured[index],
+                                  distanceMeters: state.distanceTo(
+                                    featured[index],
+                                  ),
+                                ),
+                          ),
+                        ),
+                      ),
+                      const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                    ],
+                    SliverList.list(
+                      children: [
+                        for (final business in visible.skip(_nearbyCount))
+                          nearbyCard(business),
                       ],
                     ),
                   ],
-                ),
-              ),
-            ),
-            // 2. Buscador (Visual)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: SearchBar(
-                  hintText: 'Buscar negocios o productos...',
-                  leading: const Icon(Icons.search, color: Colors.grey),
-                  elevation: WidgetStateProperty.all(0),
-                  backgroundColor: WidgetStateProperty.all(Colors.grey[200]),
-                ),
-              ),
-            ),
-            // 3. Categorías horizontales
-            const SliverToBoxAdapter(child: SizedBox(height: 16)),
-            SliverToBoxAdapter(
-              child: BlocBuilder<MarketCubit, MarketState>(
-                builder: (context, state) {
-                  return SizedBox(
-                    height: 90,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      itemCount: state.categories.length,
-                      itemBuilder: (context, index) =>
-                          _CategoryItem(category: state.categories[index]),
-                    ),
-                  );
-                },
-              ),
-            ),
-            // 4. Promociones (Cards horizontales)
-            const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(16, 24, 16, 12),
-                child: Text(
-                  'Ofertas destacadas',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: 160,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  itemCount: 3,
-                  itemBuilder: (context, index) => Card(
-                    margin: const EdgeInsets.symmetric(horizontal: 8),
-                    clipBehavior: Clip.antiAlias,
-                    child: Container(
-                      width: 280,
-                      color: Colors.blue[50],
-                      child: const Center(child: Text('Banner Promocional')),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            // 5. Lista de negocios vertical
-            const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(16, 24, 16, 12),
-                child: Text(
-                  'Negocios cercanos',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-            BlocBuilder<MarketCubit, MarketState>(
-              builder: (context, state) {
-                if (state.isLoading && state.businesses.isEmpty) {
-                  return const SliverFillRemaining(
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
-                return SliverPadding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) =>
-                          _BusinessTile(business: state.businesses[index]),
-                      childCount: state.businesses.length,
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
+                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
   }
 }
 
-class _CategoryItem extends StatelessWidget {
-  const _CategoryItem({required this.category});
-  final MarketCategory category;
+class _ProBadge extends StatelessWidget {
+  const _ProBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+      decoration: BoxDecoration(
+        color: AppColors.offerRed,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Text(
+        'PRO',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyResults extends StatelessWidget {
+  const _EmptyResults({required this.hasFilters, required this.onClear});
+
+  final bool hasFilters;
+  final VoidCallback? onClear;
+
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
       child: Column(
         children: [
-          CircleAvatar(
-            radius: 28,
-            child: Icon(
-              _getIconData(category.icon),
-              color: Theme.of(context).primaryColor,
-            ),
+          const Icon(Icons.storefront, size: 48, color: AppColors.purple),
+          const SizedBox(height: 12),
+          Text(
+            hasFilters
+                ? 'No encontramos negocios con esos filtros.'
+                : 'Aún no hay negocios registrados.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: context.palette.textSecondary),
           ),
-          const SizedBox(height: 6),
-          Text(category.nameEs, style: const TextStyle(fontSize: 12)),
+          if (onClear != null)
+            TextButton(
+              onPressed: onClear,
+              child: const Text(
+                'Limpiar filtros',
+                style: TextStyle(color: AppColors.purple),
+              ),
+            ),
         ],
       ),
-    );
-  }
-
-  /// Convierte el string hexadecimal de Supabase a IconData de forma segura.
-  /// Soporta formatos como "e8cc" o "0xe8cc".
-  // ignore: non_const_argument_for_const_parameter
-  IconData _getIconData(String? iconHex) {
-    if (iconHex == null || iconHex.isEmpty) return Icons.store_outlined;
-
-    try {
-      // Si el string viene con "0x", eliminamos los primeros dos caracteres
-      final cleanHex = iconHex.startsWith('0x')
-          ? iconHex.substring(2)
-          : iconHex;
-
-      // IMPORTANTE: No usar 'const' aquí ya que el valor se parsea en ejecución
-      return IconData(
-        // ignore: non_const_argument_for_const_parameter
-        int.parse(cleanHex, radix: 16),
-        fontFamily: 'MaterialIcons',
-      );
-    } catch (e) {
-      // Si el formato es inválido (ej: "restaurant"), devolvemos icono por defecto
-      return Icons.store_outlined;
-    }
-  }
-}
-
-class _BusinessTile extends StatelessWidget {
-  const _BusinessTile({required this.business});
-  final Business business;
-
-  Future<void> _openProfile(BuildContext context) async {
-    final repository = context.read<BusinessRepository>();
-    final messenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
-
-    try {
-      final fullBusiness = await repository.getBusiness(business.id);
-      if (fullBusiness == null) {
-        messenger.showSnackBar(
-          const SnackBar(content: Text('No se pudo cargar el negocio')),
-        );
-        return;
-      }
-      await navigator.push(
-        MaterialPageRoute(
-          builder: (_) => BusinessProfilePage(business: fullBusiness),
-        ),
-      );
-    } catch (_) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('No se pudo abrir el negocio')),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      onTap: () => _openProfile(context),
-      leading: const CircleAvatar(child: Icon(Icons.business)),
-      title: Text(
-        business.name,
-        style: const TextStyle(fontWeight: FontWeight.bold),
-      ),
-      subtitle: Text(
-        business.address,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      trailing: const Icon(Icons.chevron_right, size: 18),
     );
   }
 }

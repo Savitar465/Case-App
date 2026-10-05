@@ -13,4 +13,12 @@ abstract class AuthRepository {
   });
 
   Future<void> logout();
+
+  /// Opens Google's consent screen in the browser. Completes once the browser
+  /// is launched; the resulting session arrives through [watchSignIns].
+  Future<void> signInWithGoogle();
+
+  /// Emits a session every time Supabase signs a user in (e.g. after the
+  /// Google OAuth redirect lands back in the app).
+  Stream<AuthSession> watchSignIns();
 }

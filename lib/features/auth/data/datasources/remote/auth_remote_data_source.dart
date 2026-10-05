@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:market_app/features/auth/data/models/auth_session_model.dart';
 import 'package:market_app/features/auth/domain/entities/auth_user.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -6,6 +7,40 @@ class AuthRemoteDataSource {
   AuthRemoteDataSource(this._client);
 
   final SupabaseClient _client;
+
+  /// Deep link Supabase redirects to after Google consent. Must match the
+  /// intent-filter in AndroidManifest.xml and be listed under Authentication →
+  /// URL Configuration → Redirect URLs in the Supabase dashboard.
+  static const String oauthRedirectUrl =
+      'com.savi.market_app://login-callback/';
+
+  /// Launches the Google OAuth flow in an external browser. `supabase_flutter`
+  /// picks up the redirect deep link and stores the session itself.
+  Future<void> signInWithGoogle() async {
+    final launched = await _client.auth.signInWithOAuth(
+      OAuthProvider.google,
+      redirectTo: kIsWeb ? null : oauthRedirectUrl,
+      authScreenLaunchMode: LaunchMode.externalApplication,
+    );
+    if (!launched) {
+      throw const AuthRemoteException('No se pudo abrir el inicio con Google');
+    }
+  }
+
+  /// Sessions from `signedIn` events, enriched with the user's role.
+  Stream<AuthSessionModel> signIns() {
+    return _client.auth.onAuthStateChange
+        .where(
+          (state) =>
+              state.event == AuthChangeEvent.signedIn && state.session != null,
+        )
+        .asyncMap(
+          (state) => _enrichSessionWithRoles(
+            session: AuthSessionModel.fromSupabase(state.session!),
+            userId: state.session!.user.id,
+          ),
+        );
+  }
 
   Future<AuthSessionModel> signInWithPassword({
     required String email,
