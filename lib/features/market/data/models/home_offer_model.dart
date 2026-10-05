@@ -15,7 +15,8 @@ class HomeOfferModel extends HomeOffer {
   });
 
   /// Parses an `offers` row that embeds `businesses(name)`.
-  factory HomeOfferModel.fromRemote(Map<String, dynamic> json, {
+  factory HomeOfferModel.fromRemote(
+    Map<String, dynamic> json, {
     required String Function(String raw) resolveImageUrl,
   }) {
     final business = json['businesses'] as Map<String, dynamic>?;
@@ -29,7 +30,7 @@ class HomeOfferModel extends HomeOffer {
       discountType: json['discount_type'] as String? ?? '',
       discountValue: (json['discount_value'] as num?)?.toDouble() ?? 0,
       endDate:
-      DateTime.tryParse(json['end_date']?.toString() ?? '') ??
+          DateTime.tryParse(json['end_date']?.toString() ?? '') ??
           DateTime.now(),
       imageUrl: image == null || image.isEmpty ? null : resolveImageUrl(image),
       isFlash: json['item_id'] != null || json['start_time'] != null,

@@ -2,15 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 import '../../../business_register/presentation/pages/register_intro_page.dart';
+import '../../../settings/presentation/pages/edit_profile_page.dart';
+import '../../../settings/presentation/pages/settings_page.dart';
 import '../../domain/entities/profile_business.dart';
 import '../../domain/entities/profile_user.dart';
 import '../../domain/repositories/profile_repository.dart';
 import '../bloc/profile_cubit.dart';
 import '../widgets/profile_widgets.dart';
 import 'business_management_page.dart';
+import 'my_businesses_page.dart';
 
 /// "Mi perfil" tab. Shows the user header, the businesses they follow and
 /// either a "register a business" promo or their owned businesses.
@@ -52,7 +56,7 @@ class _ProfileView extends StatelessWidget {
                 title: const Text('Configuración'),
                 onTap: () {
                   Navigator.of(sheetContext).pop();
-                  _comingSoon(context, 'La configuración');
+                  _openSettings(context, user);
                 },
               ),
               if (user.isGuest)
@@ -84,6 +88,47 @@ class _ProfileView extends StatelessWidget {
     );
   }
 
+  void _openSettings(BuildContext context, ProfileUser user) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        settings: const RouteSettings(name: SettingsPage.routeName),
+        builder: (_) => SettingsPage(
+          isGuest: user.isGuest,
+          onOpenBusinesses: () => _openMyBusinesses(context),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openEditProfile(BuildContext context, ProfileUser user) async {
+    if (user.isGuest) {
+      Navigator.of(context).pushNamed(LoginPage.routeName);
+      return;
+    }
+    final cubit = context.read<ProfileCubit>();
+    final updated = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        settings: const RouteSettings(name: EditProfilePage.routeName),
+        builder: (_) => const EditProfilePage(),
+      ),
+    );
+    if (updated == true) cubit.load();
+  }
+
+  void _openMyBusinesses(BuildContext context) {
+    final owned = context.read<ProfileCubit>().state.overview?.owned ?? [];
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        settings: const RouteSettings(name: MyBusinessesPage.routeName),
+        builder: (_) => MyBusinessesPage(
+          businesses: owned,
+          onOpen: (business) => _openManagement(context, business),
+          onCreate: () => _openRegister(context),
+        ),
+      ),
+    );
+  }
+
   void _openManagement(BuildContext context, ProfileBusiness business) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -103,7 +148,7 @@ class _ProfileView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.page,
       body: SafeArea(
         child: BlocBuilder<ProfileCubit, ProfileState>(
           builder: (context, state) {
@@ -127,7 +172,7 @@ class _ProfileView extends StatelessWidget {
                   const SizedBox(height: 16),
                   ProfileHeader(
                     user: overview.user,
-                    onEdit: () => _comingSoon(context, 'La edición de perfil'),
+                    onEdit: () => _openEditProfile(context, overview.user),
                   ),
                   const SizedBox(height: 28),
                   _FollowedSection(
@@ -141,8 +186,7 @@ class _ProfileView extends StatelessWidget {
                   if (overview.hasBusinesses)
                     _OwnedSection(
                       businesses: overview.owned,
-                      onSeeAll: () =>
-                          _comingSoon(context, 'Ver todos tus negocios'),
+                      onSeeAll: () => _openMyBusinesses(context),
                       onOpen: (business) => _openManagement(context, business),
                       onCreate: () => _openRegister(context),
                       onBoost: () => _comingSoon(context, 'Impulsar negocio'),

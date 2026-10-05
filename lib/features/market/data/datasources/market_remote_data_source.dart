@@ -37,21 +37,20 @@ class MarketRemoteDataSource {
       final response = await _supabase
           .from('businesses')
           .select(
-        '*, business_images(url, is_cover, display_order), '
+            '*, business_images(url, is_cover, display_order), '
             'reviews(rating, status)',
-      )
+          )
           .neq('status', 'deleted')
           .order('is_pro', ascending: false)
           .order('created_at', ascending: false);
 
       return (response as List)
           .map(
-            (json) =>
-            BusinessModel.fromRemote(
+            (json) => BusinessModel.fromRemote(
               json as Map<String, dynamic>,
               resolveImageUrl: _resolveImageUrl,
             ),
-      )
+          )
           .toList();
     } on PostgrestException catch (e) {
       developer.log(
@@ -76,12 +75,11 @@ class MarketRemoteDataSource {
 
       return (response as List)
           .map(
-            (json) =>
-            HomeOfferModel.fromRemote(
+            (json) => HomeOfferModel.fromRemote(
               json as Map<String, dynamic>,
               resolveImageUrl: _resolveImageUrl,
             ),
-      )
+          )
           .toList();
     } on PostgrestException catch (e) {
       developer.log(
@@ -89,23 +87,6 @@ class MarketRemoteDataSource {
         name: 'MarketRemoteDataSource',
         error: e,
       );
-      throw MarketRemoteException(e.message);
-    }
-  }
-
-  Future<Set<String>> getFollowedBusinessIds() async {
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) return const {};
-    try {
-      final response = await _supabase
-          .from('business_follows')
-          .select('business_id')
-          .eq('user_id', userId);
-      return {
-        for (final row in (response as List).cast<Map<String, dynamic>>())
-          row['business_id'] as String,
-      };
-    } on PostgrestException catch (e) {
       throw MarketRemoteException(e.message);
     }
   }

@@ -31,17 +31,16 @@ class HomeOffer extends Equatable {
   final bool isFlash;
 
   @override
-  List<Object?> get props =>
-      [
-        id,
-        businessId,
-        businessName,
-        title,
-        description,
-        discountType,
-        discountValue,
-        endDate,
-        imageUrl,
-        isFlash,
-      ];
+  List<Object?> get props => [
+    id,
+    businessId,
+    businessName,
+    title,
+    description,
+    discountType,
+    discountValue,
+    endDate,
+    imageUrl,
+    isFlash,
+  ];
 }

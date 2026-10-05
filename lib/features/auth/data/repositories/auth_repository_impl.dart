@@ -62,6 +62,18 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
+  @override
+  Future<void> signInWithGoogle() async {
+    try {
+      await _remoteDataSource.signInWithGoogle();
+    } catch (error) {
+      throw AuthFailure(_describeLoginError(error));
+    }
+  }
+
+  @override
+  Stream<AuthSession> watchSignIns() => _remoteDataSource.signIns();
+
   String _describeLoginError(Object error) {
     if (error is supabase.AuthException) return error.message;
     if (error is AuthRemoteException) return error.message;

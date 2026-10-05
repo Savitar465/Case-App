@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:market_app/core/theme/app_colors.dart';
 
+import '../../../../core/theme/app_palette.dart';
+
 /// Bottom navigation with a tinted pill behind the selected destination.
 class HomeBottomNav extends StatelessWidget {
   const HomeBottomNav({
@@ -15,9 +17,9 @@ class HomeBottomNav extends StatelessWidget {
   static const _items = [
     (Icons.home_outlined, Icons.home_rounded, 'Inicio'),
     (
-    Icons.local_fire_department_outlined,
-    Icons.local_fire_department,
-    'Ofertas',
+      Icons.local_fire_department_outlined,
+      Icons.local_fire_department,
+      'Ofertas',
     ),
     (Icons.favorite_border, Icons.favorite, 'Favoritos'),
     (Icons.person_outline, Icons.person, 'Mi perfil'),
@@ -26,11 +28,11 @@ class HomeBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: context.palette.surface,
         boxShadow: [
           BoxShadow(
-            color: Color(0x14000000),
+            color: context.palette.shadow,
             blurRadius: 12,
             offset: Offset(0, -2),
           ),
@@ -77,7 +79,7 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.purple : Colors.black87;
+    final color = selected ? AppColors.purple : context.palette.textPrimary;
     return Semantics(
       selected: selected,
       button: true,
@@ -91,7 +93,9 @@ class _NavItem extends StatelessWidget {
           margin: const EdgeInsets.symmetric(horizontal: 6),
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: selected ? AppColors.purpleSurface : Colors.transparent,
+            color: selected
+                ? context.palette.purpleSurface
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(14),
           ),
           child: Column(

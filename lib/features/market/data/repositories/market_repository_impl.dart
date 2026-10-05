@@ -49,15 +49,6 @@ class MarketRepositoryImpl implements MarketRepository {
     }
   }
 
-  @override
-  Future<Set<String>> getFavoriteBusinessIds() async {
-    try {
-      return await _remote.getFollowedBusinessIds();
-    } catch (e) {
-      throw _mapInfraError(e);
-    }
-  }
-
   MarketFailure _mapInfraError(Object error) {
     if (error is MarketFailure) return error;
     if (error is MarketRemoteException) return MarketFailure(error.message);

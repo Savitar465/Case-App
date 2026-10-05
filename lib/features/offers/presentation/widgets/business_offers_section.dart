@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../favorites/domain/entities/favorite_kind.dart';
+import '../../../favorites/presentation/widgets/favorite_button.dart';
 import '../../domain/entities/discount_type.dart';
 import '../../domain/entities/offer.dart';
 import '../../domain/repositories/offer_repository.dart';
@@ -121,10 +123,10 @@ class OfferCard extends StatelessWidget {
           ),
           if (_isNew(offer))
             const Positioned(top: 8, left: 8, child: _NuevoBadge()),
-          const Positioned(
-            top: 8,
-            right: 8,
-            child: Icon(Icons.favorite_border, color: Colors.white, size: 20),
+          Positioned(
+            top: 6,
+            right: 6,
+            child: FavoriteButton(kind: FavoriteKind.offer, targetId: offer.id),
           ),
           Positioned(
             left: 10,

@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../domain/entities/catalog_item_draft.dart';
 import '../widgets/register_widgets.dart';
 
@@ -179,11 +180,11 @@ class _CatalogItemFormPageState extends State<CatalogItemFormPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.page,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.palette.page,
         elevation: 0,
-        foregroundColor: Colors.black87,
+        foregroundColor: context.palette.textPrimary,
       ),
       body: SafeArea(
         child: ListView(
@@ -255,9 +256,9 @@ class _CatalogItemFormPageState extends State<CatalogItemFormPage> {
         integerOnly: true,
       ),
       const SizedBox(height: 6),
-      const Text(
+      Text(
         'Déjalo vacío si no deseas establecer una cantidad',
-        style: TextStyle(fontSize: 12, color: Colors.black54),
+        style: TextStyle(fontSize: 12, color: context.palette.textSecondary),
       ),
       const SizedBox(height: 24),
       const _Label('Descripción (opcional)'),
@@ -283,7 +284,7 @@ class _CatalogItemFormPageState extends State<CatalogItemFormPage> {
       margin: const EdgeInsets.only(top: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.purpleSurface,
+        color: context.palette.purpleSurface,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -412,7 +413,7 @@ class _OfferOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? AppColors.purpleSurface : Colors.white,
+      color: selected ? context.palette.purpleSurface : context.palette.surface,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
@@ -423,7 +424,7 @@ class _OfferOption extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: selected ? AppColors.purple : kFieldBorder,
+              color: selected ? AppColors.purple : context.palette.border,
               width: selected ? 2 : 1,
             ),
           ),
@@ -437,7 +438,9 @@ class _OfferOption extends StatelessWidget {
                         ? Icons.radio_button_checked
                         : Icons.radio_button_off,
                     size: 20,
-                    color: selected ? AppColors.purple : Colors.black38,
+                    color: selected
+                        ? AppColors.purple
+                        : context.palette.textMuted,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -457,7 +460,10 @@ class _OfferOption extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   subtitle!,
-                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: context.palette.textSecondary,
+                  ),
                 ),
               ],
             ],
@@ -489,11 +495,11 @@ class _PickerField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 12, color: Colors.black54),
+          style: TextStyle(fontSize: 12, color: context.palette.textSecondary),
         ),
         const SizedBox(height: 6),
         Material(
-          color: Colors.white,
+          color: context.palette.surface,
           borderRadius: BorderRadius.circular(10),
           child: InkWell(
             onTap: onTap,
@@ -502,7 +508,7 @@ class _PickerField extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: kFieldBorder),
+                border: Border.all(color: context.palette.border),
               ),
               child: Row(
                 children: [
@@ -567,7 +573,7 @@ class _DayChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? AppColors.purple : Colors.white,
+      color: selected ? AppColors.purple : context.palette.surface,
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
         onTap: onTap,
@@ -579,7 +585,7 @@ class _DayChip extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: selected ? AppColors.purple : kFieldBorder,
+              color: selected ? AppColors.purple : context.palette.border,
             ),
           ),
           child: Text(
@@ -587,7 +593,7 @@ class _DayChip extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: selected ? Colors.white : Colors.black87,
+              color: selected ? Colors.white : context.palette.textPrimary,
             ),
           ),
         ),
@@ -628,14 +634,14 @@ class _Stepper extends StatelessWidget {
         decoration: InputDecoration(
           prefixText: prefixText,
           filled: filled,
-          fillColor: Colors.white,
+          fillColor: context.palette.surface,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 12,
             vertical: 12,
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: kFieldBorder),
+            borderSide: BorderSide(color: context.palette.border),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
@@ -670,7 +676,7 @@ class _ArrowButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      child: Icon(icon, size: 18, color: Colors.black54),
+      child: Icon(icon, size: 18, color: context.palette.textSecondary),
     );
   }
 }
@@ -724,16 +730,19 @@ class _PhotoBox extends StatelessWidget {
         width: double.infinity,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: kFieldBorder),
+          border: Border.all(color: context.palette.border),
         ),
-        child: const Column(
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.add_photo_alternate_outlined, size: 44),
             SizedBox(height: 6),
             Text(
               'Toca para elegir una foto',
-              style: TextStyle(fontSize: 13, color: Colors.black54),
+              style: TextStyle(
+                fontSize: 13,
+                color: context.palette.textSecondary,
+              ),
             ),
           ],
         ),

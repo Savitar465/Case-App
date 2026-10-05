@@ -3,7 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:market_app/core/theme/app_colors.dart';
-import 'package:market_app/features/business/domain/repositories/business_repository.dart';
+import 'package:market_app/features/favorites/presentation/bloc/favorites_cubit.dart';
+import 'package:market_app/features/favorites/presentation/pages/favorites_page.dart';
 import 'package:market_app/features/market/domain/entities/business.dart';
 import 'package:market_app/features/market/domain/repositories/market_repository.dart';
 import 'package:market_app/features/market/presentation/bloc/market_cubit.dart';
@@ -14,6 +15,8 @@ import 'package:market_app/features/market/presentation/widgets/home_bottom_nav.
 import 'package:market_app/features/market/presentation/widgets/home_header.dart';
 import 'package:market_app/features/market/presentation/widgets/offers_carousel.dart';
 import 'package:market_app/features/profile/presentation/pages/profile_page.dart';
+
+import '../../../../core/theme/app_palette.dart';
 
 class MarketHomePage extends StatefulWidget {
   const MarketHomePage({super.key});
@@ -31,25 +34,29 @@ class _MarketHomePageState extends State<MarketHomePage> {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) =>
-      MarketCubit(
-        repository: context.read<MarketRepository>(),
-        businessRepository: context.read<BusinessRepository>(),
-      )
-        ..initialize(),
+          MarketCubit(repository: context.read<MarketRepository>())
+            ..initialize(),
       child: Scaffold(
-        backgroundColor: AppColors.pageBackground,
+        backgroundColor: context.palette.pageTinted,
         body: IndexedStack(
           index: _selectedIndex,
           children: const [
             _HomeView(),
             Center(child: Text('Ofertas (Próximamente)')),
-            Center(child: Text('Favoritos (Próximamente)')),
+            FavoritesPage(),
             ProfilePage(),
           ],
         ),
         bottomNavigationBar: HomeBottomNav(
           currentIndex: _selectedIndex,
-          onTap: (index) => setState(() => _selectedIndex = index),
+          onTap: (index) {
+            // Follows can also change from the business profile; reload so
+            // the counts are current whenever the tab is opened.
+            if (index == 2 && index != _selectedIndex) {
+              context.read<FavoritesCubit>().refresh();
+            }
+            setState(() => _selectedIndex = index);
+          },
         ),
       ),
     );
@@ -138,11 +145,10 @@ class _HomeViewState extends State<_HomeView> {
   Widget build(BuildContext context) {
     return BlocListener<MarketCubit, MarketState>(
       listenWhen: (prev, curr) =>
-      curr.error != null && prev.error != curr.error,
-      listener: (context, state) =>
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(state.error!))),
+          curr.error != null && prev.error != curr.error,
+      listener: (context, state) => ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(state.error!))),
       child: SafeArea(
         bottom: false,
         child: RefreshIndicator(
@@ -155,14 +161,11 @@ class _HomeViewState extends State<_HomeView> {
               final withOffers = state.businessIdsWithOffers;
               final cubit = context.read<MarketCubit>();
 
-              Widget nearbyCard(Business business) =>
-                  NearbyBusinessCard(
-                    business: business,
-                    distanceMeters: state.distanceTo(business),
-                    isFavorite: state.favoriteIds.contains(business.id),
-                    hasOffer: withOffers.contains(business.id),
-                    onFavorite: () => cubit.toggleFavorite(business.id),
-                  );
+              Widget nearbyCard(Business business) => NearbyBusinessCard(
+                business: business,
+                distanceMeters: state.distanceTo(business),
+                hasOffer: withOffers.contains(business.id),
+              );
 
               return CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -211,62 +214,59 @@ class _HomeViewState extends State<_HomeView> {
                         ),
                       ),
                     )
-                  else
-                    if (visible.isEmpty)
-                      SliverToBoxAdapter(
-                        child: _EmptyResults(
-                          hasFilters:
-                          state.hasActiveFilters ||
-                              state.searchQuery.isNotEmpty,
-                          onClear: state.hasActiveFilters
-                              ? cubit.clearFilters
-                              : null,
-                        ),
-                      )
-                    else
-                      ...[
-                        SliverList.list(
-                          children: [
-                            for (final business in visible.take(_nearbyCount))
-                              nearbyCard(business),
-                          ],
-                        ),
-                        if (featured.isNotEmpty) ...[
-                          const SliverToBoxAdapter(
-                            child: HomeSectionTitle(
-                              title: 'Negocios destacados',
-                              trailing: _ProBadge(),
-                            ),
-                          ),
-                          SliverToBoxAdapter(
-                            child: SizedBox(
-                              height: 198,
-                              child: ListView.separated(
-                                scrollDirection: Axis.horizontal,
-                                padding: const EdgeInsets.fromLTRB(
-                                    16, 0, 16, 8),
-                                itemCount: featured.length,
-                                separatorBuilder: (_, _) =>
-                                const SizedBox(width: 12),
-                                itemBuilder: (context, index) =>
-                                    FeaturedBusinessCard(
-                                      business: featured[index],
-                                      distanceMeters: state.distanceTo(
-                                        featured[index],
-                                      ),
-                                    ),
-                              ),
-                            ),
-                          ),
-                          const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                        ],
-                        SliverList.list(
-                          children: [
-                            for (final business in visible.skip(_nearbyCount))
-                              nearbyCard(business),
-                          ],
-                        ),
+                  else if (visible.isEmpty)
+                    SliverToBoxAdapter(
+                      child: _EmptyResults(
+                        hasFilters:
+                            state.hasActiveFilters ||
+                            state.searchQuery.isNotEmpty,
+                        onClear: state.hasActiveFilters
+                            ? cubit.clearFilters
+                            : null,
+                      ),
+                    )
+                  else ...[
+                    SliverList.list(
+                      children: [
+                        for (final business in visible.take(_nearbyCount))
+                          nearbyCard(business),
                       ],
+                    ),
+                    if (featured.isNotEmpty) ...[
+                      const SliverToBoxAdapter(
+                        child: HomeSectionTitle(
+                          title: 'Negocios destacados',
+                          trailing: _ProBadge(),
+                        ),
+                      ),
+                      SliverToBoxAdapter(
+                        child: SizedBox(
+                          height: 198,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                            itemCount: featured.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(width: 12),
+                            itemBuilder: (context, index) =>
+                                FeaturedBusinessCard(
+                                  business: featured[index],
+                                  distanceMeters: state.distanceTo(
+                                    featured[index],
+                                  ),
+                                ),
+                          ),
+                        ),
+                      ),
+                      const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                    ],
+                    SliverList.list(
+                      children: [
+                        for (final business in visible.skip(_nearbyCount))
+                          nearbyCard(business),
+                      ],
+                    ),
+                  ],
                   const SliverToBoxAdapter(child: SizedBox(height: 24)),
                 ],
               );
@@ -320,7 +320,7 @@ class _EmptyResults extends StatelessWidget {
                 ? 'No encontramos negocios con esos filtros.'
                 : 'Aún no hay negocios registrados.',
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.black54),
+            style: TextStyle(color: context.palette.textSecondary),
           ),
           if (onClear != null)
             TextButton(

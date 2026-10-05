@@ -40,9 +40,7 @@ void main() {
 
     expect(business.openingHours.currentRange(monday(13, 0)), isNull);
     expect(
-      business.openingHours
-          .currentRange(monday(15, 0))
-          ?.closeLabel,
+      business.openingHours.currentRange(monday(15, 0))?.closeLabel,
       '19:00',
     );
   });

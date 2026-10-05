@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:market_app/features/auth/presentation/bloc/auth_bloc.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../../market/presentation/pages/market_home_page.dart';
 import '../widgets/auth_widgets.dart';
 import 'signup_page.dart';
@@ -59,6 +60,22 @@ class _LoginPageState extends State<LoginPage> {
     ).push(MaterialPageRoute<void>(builder: (_) => const SignupPage()));
   }
 
+  void _signInWithGoogle() {
+    if (!_acceptedTerms) {
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Acepta los Términos y la Política de Privacidad para continuar',
+            ),
+          ),
+        );
+      return;
+    }
+    context.read<AuthBloc>().add(const GoogleSignInRequested());
+  }
+
   void _comingSoon(String feature) {
     ScaffoldMessenger.of(context)
       ..clearSnackBars()
@@ -70,7 +87,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.page,
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthError) {
@@ -154,10 +171,7 @@ class _LoginPageState extends State<LoginPage> {
                             const SizedBox(height: 16),
                             const LabeledDivider(label: 'O continúa con'),
                             const SizedBox(height: 16),
-                            GoogleButton(
-                              onPressed: () =>
-                                  _comingSoon('El inicio con Google'),
-                            ),
+                            GoogleButton(onPressed: _signInWithGoogle),
                             const SizedBox(height: 20),
                             _SignupPrompt(onTap: _goToSignup),
                           ],
@@ -204,11 +218,11 @@ class _LoginHero extends StatelessWidget {
             alignment: Alignment.bottomCenter,
             child: Container(
               height: 72,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.white],
+                  colors: [Colors.transparent, context.palette.page],
                 ),
               ),
             ),

@@ -26,23 +26,24 @@ class BusinessModel extends Business {
   /// Parses a `businesses` row that embeds `business_images(...)` and
   /// `reviews(rating,status)`. [resolveImageUrl] turns storage paths into
   /// public URLs.
-  factory BusinessModel.fromRemote(Map<String, dynamic> json, {
+  factory BusinessModel.fromRemote(
+    Map<String, dynamic> json, {
     required String Function(String raw) resolveImageUrl,
   }) {
     final images =
-    (json['business_images'] as List<dynamic>? ?? const [])
-        .whereType<Map<String, dynamic>>()
-        .where((row) => (row['url'] as String?)?.isNotEmpty ?? false)
-        .toList()
-      ..sort((a, b) {
-        final cover =
-            (b['is_cover'] == true ? 1 : 0) -
+        (json['business_images'] as List<dynamic>? ?? const [])
+            .whereType<Map<String, dynamic>>()
+            .where((row) => (row['url'] as String?)?.isNotEmpty ?? false)
+            .toList()
+          ..sort((a, b) {
+            final cover =
+                (b['is_cover'] == true ? 1 : 0) -
                 (a['is_cover'] == true ? 1 : 0);
-        if (cover != 0) return cover;
-        return ((a['display_order'] as num?) ?? 0).compareTo(
-          (b['display_order'] as num?) ?? 0,
-        );
-      });
+            if (cover != 0) return cover;
+            return ((a['display_order'] as num?) ?? 0).compareTo(
+              (b['display_order'] as num?) ?? 0,
+            );
+          });
 
     final ratings = (json['reviews'] as List<dynamic>? ?? const [])
         .whereType<Map<String, dynamic>>()

@@ -3,6 +3,8 @@ import 'package:market_app/core/theme/app_colors.dart';
 import 'package:market_app/features/market/domain/entities/home_offer.dart';
 import 'package:market_app/features/market/presentation/widgets/business_cards.dart';
 
+import '../../../../core/theme/app_palette.dart';
+
 /// "Ofertas cerca de ti" banner carousel with page dots.
 class OffersCarousel extends StatefulWidget {
   const OffersCarousel({super.key, required this.offers});
@@ -55,7 +57,7 @@ class _OffersCarouselState extends State<OffersCarousel> {
                   decoration: BoxDecoration(
                     color: i == _page
                         ? AppColors.purple
-                        : const Color(0xFFD9D2E3),
+                        : context.palette.border,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../../reviews/presentation/bloc/review_list_cubit.dart';
 
 /// Bottom sheet to create or edit the signed-in user's review.
@@ -64,7 +65,7 @@ class _SubmitReviewSheetState extends State<SubmitReviewSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.black12,
+                color: context.palette.faint,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),

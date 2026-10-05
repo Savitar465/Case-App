@@ -3,11 +3,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:market_app/core/theme/app_colors.dart';
 import 'package:market_app/features/business/domain/repositories/business_repository.dart';
 import 'package:market_app/features/business/presentation/pages/business_profile_page.dart';
+import 'package:market_app/features/favorites/domain/entities/favorite_kind.dart';
+import 'package:market_app/features/favorites/presentation/widgets/favorite_button.dart';
 import 'package:market_app/features/market/domain/entities/business.dart';
 
+import '../../../../core/theme/app_palette.dart';
+
 /// Loads the full business and pushes its profile page.
-Future<void> openBusinessProfile(BuildContext context,
-    String businessId,) async {
+Future<void> openBusinessProfile(
+  BuildContext context,
+  String businessId,
+) async {
   final repository = context.read<BusinessRepository>();
   final messenger = ScaffoldMessenger.of(context);
   final navigator = Navigator.of(context);
@@ -33,25 +39,20 @@ Future<void> openBusinessProfile(BuildContext context,
   }
 }
 
-String _distanceLabel(double meters) =>
-    meters < 1000
-        ? '${(meters / 10).round() * 10} m de ti'
-        : '${(meters / 1000).toStringAsFixed(1)} km de ti';
+String _distanceLabel(double meters) => meters < 1000
+    ? '${(meters / 10).round() * 10} m de ti'
+    : '${(meters / 1000).toStringAsFixed(1)} km de ti';
 
 /// Horizontal card used in "Negocios cerca de ti" (image left, info right).
 class NearbyBusinessCard extends StatelessWidget {
   const NearbyBusinessCard({
     super.key,
     required this.business,
-    required this.isFavorite,
-    required this.onFavorite,
     this.distanceMeters,
     this.hasOffer = false,
   });
 
   final Business business;
-  final bool isFavorite;
-  final VoidCallback onFavorite;
   final double? distanceMeters;
   final bool hasOffer;
 
@@ -80,9 +81,9 @@ class NearbyBusinessCard extends StatelessWidget {
                     Positioned(
                       top: 4,
                       right: 4,
-                      child: _FavoriteButton(
-                        isFavorite: isFavorite,
-                        onPressed: onFavorite,
+                      child: FavoriteButton(
+                        kind: FavoriteKind.business,
+                        targetId: business.id,
                       ),
                     ),
                   ],
@@ -120,9 +121,9 @@ class NearbyBusinessCard extends StatelessWidget {
                           business.description!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Colors.black54,
+                            color: context.palette.textSecondary,
                           ),
                         ),
                       ],
@@ -239,16 +240,16 @@ class _CardSurface extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x14000000),
+            color: context.palette.shadow,
             blurRadius: 10,
             offset: Offset(0, 3),
           ),
         ],
       ),
       child: Material(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(14),
         clipBehavior: Clip.antiAlias,
         child: InkWell(onTap: onTap, child: child),
@@ -264,8 +265,8 @@ class _Cover extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const placeholder = ColoredBox(
-      color: AppColors.purpleSurface,
+    final placeholder = ColoredBox(
+      color: context.palette.purpleSurface,
       child: Center(
         child: Icon(Icons.storefront, color: AppColors.purple, size: 36),
       ),
@@ -275,7 +276,7 @@ class _Cover extends StatelessWidget {
       url!,
       fit: BoxFit.cover,
       loadingBuilder: (context, child, progress) =>
-      progress == null ? child : placeholder,
+          progress == null ? child : placeholder,
       errorBuilder: (_, _, _) => placeholder,
     );
   }
@@ -307,33 +308,6 @@ class _Avatar extends StatelessWidget {
   }
 }
 
-class _FavoriteButton extends StatelessWidget {
-  const _FavoriteButton({required this.isFavorite, required this.onPressed});
-
-  final bool isFavorite;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onPressed,
-        child: Padding(
-          padding: const EdgeInsets.all(5),
-          child: Icon(
-            isFavorite ? Icons.favorite : Icons.favorite_border,
-            size: 18,
-            color: isFavorite ? AppColors.offerRed : Colors.black87,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _RatingRow extends StatelessWidget {
   const _RatingRow({required this.business});
 
@@ -343,9 +317,9 @@ class _RatingRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final rating = business.rating;
     if (business.reviewCount == 0) {
-      return const Text(
+      return Text(
         'Sin opiniones aún',
-        style: TextStyle(fontSize: 12, color: Colors.black45),
+        style: TextStyle(fontSize: 12, color: context.palette.textTertiary),
       );
     }
     return Row(
@@ -371,7 +345,7 @@ class _RatingRow extends StatelessWidget {
             '(${business.reviewCount} opiniones)',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 11, color: Colors.black45),
+            style: TextStyle(fontSize: 11, color: context.palette.textTertiary),
           ),
         ),
       ],
@@ -401,7 +375,10 @@ class _IconLine extends StatelessWidget {
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 11.5, color: Colors.black87),
+            style: TextStyle(
+              fontSize: 11.5,
+              color: context.palette.textPrimary,
+            ),
           ),
         ),
       ],
@@ -437,10 +414,15 @@ class _OpenStatus extends StatelessWidget {
         if (isOpen && showClosingTime)
           Flexible(
             child: Text(
-              ' · Cierra a las ${range.closeLabel}',
+              range.isAllDay
+                  ? ' · 24 horas'
+                  : ' · Cierra a las ${range.closeLabel}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 11.5, color: Colors.black87),
+              style: TextStyle(
+                fontSize: 11.5,
+                color: context.palette.textPrimary,
+              ),
             ),
           ),
       ],

@@ -8,7 +8,4 @@ abstract class MarketRepository {
 
   Stream<List<HomeOffer>> watchOffers();
   Future<void> refresh();
-
-  /// Ids of the businesses the signed-in user follows (empty when signed out).
-  Future<Set<String>> getFavoriteBusinessIds();
 }

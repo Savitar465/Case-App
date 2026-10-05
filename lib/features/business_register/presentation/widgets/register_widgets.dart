@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
-
-const Color kFieldBorder = Color(0xFFE7D9E9);
+import '../../../../core/theme/app_palette.dart';
 
 /// Top bar with a "Guardar y salir" pill and an optional progress bar.
 class WizardTopBar extends StatelessWidget {
@@ -27,8 +26,8 @@ class WizardTopBar extends StatelessWidget {
           child: OutlinedButton(
             onPressed: onExit,
             style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.black87,
-              side: const BorderSide(color: Color(0xFFE0E0E0)),
+              foregroundColor: context.palette.textPrimary,
+              side: BorderSide(color: context.palette.neutralBorder),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
@@ -47,7 +46,7 @@ class WizardTopBar extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 8,
-              backgroundColor: const Color(0xFFEFEFEF),
+              backgroundColor: context.palette.mutedFill,
               valueColor: const AlwaysStoppedAnimation(AppColors.purple),
             ),
           ),
@@ -85,9 +84,10 @@ class StepSubtitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: Theme.of(
-        context,
-      ).textTheme.bodyLarge?.copyWith(color: Colors.black54, height: 1.3),
+      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+        color: context.palette.textSecondary,
+        height: 1.3,
+      ),
     );
   }
 }
@@ -138,14 +138,14 @@ class WizardTextField extends StatelessWidget {
         prefixIcon: prefixIcon,
         suffixIcon: suffixIcon,
         filled: filled,
-        fillColor: const Color(0xFFF7F7F7),
+        fillColor: context.palette.mutedFill,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 16,
         ),
-        enabledBorder: border(kFieldBorder),
+        enabledBorder: border(context.palette.border),
         focusedBorder: border(AppColors.purple),
-        border: border(kFieldBorder),
+        border: border(context.palette.border),
       ),
     );
   }
@@ -223,7 +223,9 @@ class WizardFooterNav extends StatelessWidget {
         if (onBack != null)
           TextButton(
             onPressed: onBack,
-            style: TextButton.styleFrom(foregroundColor: Colors.black87),
+            style: TextButton.styleFrom(
+              foregroundColor: context.palette.textPrimary,
+            ),
             child: const Text(
               'Atrás',
               style: TextStyle(

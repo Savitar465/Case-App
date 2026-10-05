@@ -5,7 +5,6 @@ class MarketState extends Equatable {
     this.categories = const [],
     this.businesses = const [],
     this.offers = const [],
-    this.favoriteIds = const {},
     this.selectedCategoryId,
     this.searchQuery = '',
     this.openNowOnly = false,
@@ -21,7 +20,6 @@ class MarketState extends Equatable {
   final List<MarketCategory> categories;
   final List<Business> businesses;
   final List<HomeOffer> offers;
-  final Set<String> favoriteIds;
   final String? selectedCategoryId;
   final String searchQuery;
   final bool openNowOnly;
@@ -81,7 +79,6 @@ class MarketState extends Equatable {
     List<MarketCategory>? categories,
     List<Business>? businesses,
     List<HomeOffer>? offers,
-    Set<String>? favoriteIds,
     String? selectedCategoryId,
     bool clearSelectedCategory = false,
     String? searchQuery,
@@ -99,7 +96,6 @@ class MarketState extends Equatable {
       categories: categories ?? this.categories,
       businesses: businesses ?? this.businesses,
       offers: offers ?? this.offers,
-      favoriteIds: favoriteIds ?? this.favoriteIds,
       selectedCategoryId: clearSelectedCategory
           ? null
           : selectedCategoryId ?? this.selectedCategoryId,
@@ -120,7 +116,6 @@ class MarketState extends Equatable {
     categories,
     businesses,
     offers,
-    favoriteIds,
     selectedCategoryId,
     searchQuery,
     openNowOnly,

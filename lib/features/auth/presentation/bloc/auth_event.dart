@@ -34,3 +34,17 @@ class SignupSubmitted extends AuthEvent {
 class LogoutRequested extends AuthEvent {
   const LogoutRequested();
 }
+
+class GoogleSignInRequested extends AuthEvent {
+  const GoogleSignInRequested();
+}
+
+/// Internal: Supabase reported a sign-in (Google redirect completed).
+class _SignedInExternally extends AuthEvent {
+  const _SignedInExternally(this.session);
+
+  final AuthSession session;
+
+  @override
+  List<Object?> get props => [session];
+}

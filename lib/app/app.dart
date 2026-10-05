@@ -5,7 +5,9 @@ import 'package:market_app/features/auth/domain/repositories/auth_repository.dar
 import 'package:market_app/features/auth/domain/usecases/login_use_case.dart';
 import 'package:market_app/features/auth/domain/usecases/logout_use_case.dart';
 import 'package:market_app/features/auth/domain/usecases/restore_session_use_case.dart';
+import 'package:market_app/features/auth/domain/usecases/sign_in_with_google_use_case.dart';
 import 'package:market_app/features/auth/domain/usecases/signup_use_case.dart';
+import 'package:market_app/features/auth/domain/usecases/watch_sign_ins_use_case.dart';
 import 'package:market_app/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:market_app/features/auth/presentation/pages/login_page.dart';
 import 'package:market_app/features/auth/presentation/pages/signup_page.dart';
@@ -17,12 +19,16 @@ class App extends StatelessWidget {
     : _loginUseCase = LoginUseCase(authRepository),
       _logoutUseCase = LogoutUseCase(authRepository),
       _restoreSessionUseCase = RestoreSessionUseCase(authRepository),
-      _signUpUseCase = SignUpUseCase(authRepository);
+      _signUpUseCase = SignUpUseCase(authRepository),
+      _signInWithGoogleUseCase = SignInWithGoogleUseCase(authRepository),
+      _watchSignInsUseCase = WatchSignInsUseCase(authRepository);
 
   final LoginUseCase _loginUseCase;
   final LogoutUseCase _logoutUseCase;
   final RestoreSessionUseCase _restoreSessionUseCase;
   final SignUpUseCase _signUpUseCase;
+  final SignInWithGoogleUseCase _signInWithGoogleUseCase;
+  final WatchSignInsUseCase _watchSignInsUseCase;
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +38,8 @@ class App extends StatelessWidget {
         logoutUseCase: _logoutUseCase,
         restoreSessionUseCase: _restoreSessionUseCase,
         signUpUseCase: _signUpUseCase,
+        signInWithGoogleUseCase: _signInWithGoogleUseCase,
+        watchSignInsUseCase: _watchSignInsUseCase,
       )..add(const AuthStarted()),
       child: MaterialApp(
         title: AppConstants.appName,

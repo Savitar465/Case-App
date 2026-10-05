@@ -4,6 +4,8 @@ import 'package:market_app/core/theme/app_colors.dart';
 import 'package:market_app/features/market/domain/entities/category.dart';
 import 'package:market_app/features/market/presentation/bloc/market_cubit.dart';
 
+import '../../../../core/theme/app_palette.dart';
+
 /// Horizontal row of category tiles ending in "Ver más".
 class CategoryStrip extends StatelessWidget {
   const CategoryStrip({super.key});
@@ -12,9 +14,7 @@ class CategoryStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state = context
-        .watch<MarketCubit>()
-        .state;
+    final state = context.watch<MarketCubit>().state;
     final categories = state.categories
         .where((c) => c.name != 'Otros')
         .toList();
@@ -56,28 +56,27 @@ class CategoryStrip extends StatelessWidget {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
-      builder: (sheetContext) =>
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
-              child: Wrap(
-                spacing: 4,
-                runSpacing: 12,
-                children: [
-                  for (final category in categories)
-                    _CategoryTile(
-                      label: category.nameEs,
-                      style: _CategoryStyle.of(category),
-                      selected: category.id == cubit.state.selectedCategoryId,
-                      onTap: () {
-                        cubit.selectCategory(category.id);
-                        Navigator.of(sheetContext).pop();
-                      },
-                    ),
-                ],
-              ),
-            ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+          child: Wrap(
+            spacing: 4,
+            runSpacing: 12,
+            children: [
+              for (final category in categories)
+                _CategoryTile(
+                  label: category.nameEs,
+                  style: _CategoryStyle.of(category),
+                  selected: category.id == cubit.state.selectedCategoryId,
+                  onTap: () {
+                    cubit.selectCategory(category.id);
+                    Navigator.of(sheetContext).pop();
+                  },
+                ),
+            ],
           ),
+        ),
+      ),
     );
   }
 }
@@ -95,8 +94,7 @@ class _CategoryStyle {
       'food' => const _CategoryStyle(Icons.lunch_dining, Color(0xFFFF8A00)),
       'education' => const _CategoryStyle(Icons.school, Color(0xFF3949AB)),
       'health' => const _CategoryStyle(Icons.monitor_heart, Color(0xFFE53935)),
-      'entertainment' =>
-      const _CategoryStyle(
+      'entertainment' => const _CategoryStyle(
         Icons.movie_filter,
         Color(0xFFD81B60),
       ),
@@ -138,21 +136,31 @@ class _CategoryTile extends StatelessWidget {
               width: 54,
               height: 54,
               decoration: BoxDecoration(
-                color: selected ? AppColors.purpleSurface : Colors.white,
+                color: selected
+                    ? context.palette.purpleSurface
+                    : context.palette.surface,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: selected ? AppColors.purple : const Color(0xFFEDE8F3),
+                  color: selected ? AppColors.purple : context.palette.border,
                   width: selected ? 1.5 : 1,
                 ),
-                boxShadow: const [
+                boxShadow: [
                   BoxShadow(
-                    color: Color(0x0F000000),
+                    color: context.palette.shadow,
                     blurRadius: 6,
                     offset: Offset(0, 2),
                   ),
                 ],
               ),
-              child: Icon(style.icon, color: style.color, size: 30),
+              child: Icon(
+                style.icon,
+                // Some brand colours (slate, indigo) vanish on a dark tile;
+                // lift them towards white in dark mode.
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Color.lerp(style.color, Colors.white, 0.3)
+                    : style.color,
+                size: 30,
+              ),
             ),
             const SizedBox(height: 6),
             Text(
@@ -162,7 +170,9 @@ class _CategoryTile extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: selected ? AppColors.purple : Colors.black87,
+                color: selected
+                    ? AppColors.purple
+                    : context.palette.textPrimary,
               ),
             ),
           ],

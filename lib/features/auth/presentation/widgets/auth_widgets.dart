@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 
 /// Rounded, icon-prefixed text field matching the mockup.
 class AuthTextField extends StatelessWidget {
@@ -37,7 +38,7 @@ class AuthTextField extends StatelessWidget {
         hintText: hintText,
         prefixIcon: prefixIcon == null
             ? null
-            : Icon(prefixIcon, color: Colors.black45),
+            : Icon(prefixIcon, color: context.palette.textTertiary),
         suffixIcon: onToggleObscure == null
             ? null
             : IconButton(
@@ -46,18 +47,18 @@ class AuthTextField extends StatelessWidget {
                   obscureText
                       ? Icons.visibility_off_outlined
                       : Icons.visibility_outlined,
-                  color: Colors.black45,
+                  color: context.palette.textTertiary,
                 ),
               ),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: context.palette.surface,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 16,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(28),
-          borderSide: const BorderSide(color: Color(0xFFE3D9F5)),
+          borderSide: BorderSide(color: context.palette.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(28),
@@ -132,9 +133,9 @@ class GoogleButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.black87,
+          foregroundColor: context.palette.textPrimary,
           minimumSize: const Size.fromHeight(52),
-          side: const BorderSide(color: Color(0xFFE3D9F5)),
+          side: BorderSide(color: context.palette.border),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(28),
           ),
@@ -168,9 +169,9 @@ class _GoogleGlyph extends StatelessWidget {
       height: 22,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFFE0E0E0)),
+        border: Border.all(color: context.palette.neutralBorder),
       ),
       child: const Text(
         'G',
@@ -220,7 +221,7 @@ class TermsCheckbox extends StatelessWidget {
             child: Text.rich(
               TextSpan(
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.black54,
+                  color: context.palette.textSecondary,
                 ),
                 children: const [
                   TextSpan(text: 'Acepto los '),
@@ -252,7 +253,7 @@ class LabeledDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const line = Expanded(child: Divider(color: Color(0xFFE3D9F5)));
+    final line = Expanded(child: Divider(color: context.palette.border));
     return Row(
       children: [
         line,
@@ -260,9 +261,9 @@ class LabeledDivider extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text(
             label,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: Colors.black45),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: context.palette.textTertiary,
+            ),
           ),
         ),
         line,

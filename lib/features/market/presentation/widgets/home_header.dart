@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:market_app/core/theme/app_colors.dart';
 import 'package:market_app/features/market/presentation/bloc/market_cubit.dart';
 
+import '../../../../core/theme/app_palette.dart';
+
 /// "📍 Pando ⌄" location label plus the notifications bell.
 class HomeHeader extends StatelessWidget {
   const HomeHeader({super.key, required this.onLocationTap});
@@ -45,11 +47,9 @@ class HomeHeader extends StatelessWidget {
           const Spacer(),
           IconButton(
             tooltip: 'Notificaciones',
-            onPressed: () =>
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('No tienes notificaciones nuevas')),
-                ),
+            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('No tienes notificaciones nuevas')),
+            ),
             icon: const Icon(Icons.notifications_none_rounded, size: 28),
           ),
         ],
@@ -67,24 +67,22 @@ class HomeSearchField extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
       child: TextField(
-        onChanged: context
-            .read<MarketCubit>()
-            .search,
+        onChanged: context.read<MarketCubit>().search,
         textInputAction: TextInputAction.search,
         decoration: InputDecoration(
           hintText: '¿Qué quieres hoy?',
-          hintStyle: const TextStyle(color: Colors.black45),
-          prefixIcon: const Icon(Icons.search, color: Colors.black87),
+          hintStyle: TextStyle(color: context.palette.textTertiary),
+          prefixIcon: Icon(Icons.search, color: context.palette.textPrimary),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: context.palette.surface,
           contentPadding: const EdgeInsets.symmetric(vertical: 14),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(28),
-            borderSide: const BorderSide(color: Color(0xFFE3DDEB)),
+            borderSide: BorderSide(color: context.palette.border),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(28),
-            borderSide: const BorderSide(color: Color(0xFFE3DDEB)),
+            borderSide: BorderSide(color: context.palette.border),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(28),

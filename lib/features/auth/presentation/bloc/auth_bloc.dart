@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:market_app/features/auth/domain/entities/auth_failure.dart';
@@ -5,7 +7,9 @@ import 'package:market_app/features/auth/domain/entities/auth_session.dart';
 import 'package:market_app/features/auth/domain/usecases/login_use_case.dart';
 import 'package:market_app/features/auth/domain/usecases/logout_use_case.dart';
 import 'package:market_app/features/auth/domain/usecases/restore_session_use_case.dart';
+import 'package:market_app/features/auth/domain/usecases/sign_in_with_google_use_case.dart';
 import 'package:market_app/features/auth/domain/usecases/signup_use_case.dart';
+import 'package:market_app/features/auth/domain/usecases/watch_sign_ins_use_case.dart';
 
 part 'auth_event.dart';
 part 'auth_state.dart';
@@ -16,15 +20,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required LogoutUseCase logoutUseCase,
     required RestoreSessionUseCase restoreSessionUseCase,
     required SignUpUseCase signUpUseCase,
+    required SignInWithGoogleUseCase signInWithGoogleUseCase,
+    required WatchSignInsUseCase watchSignInsUseCase,
   }) : _loginUseCase = loginUseCase,
        _logoutUseCase = logoutUseCase,
        _restoreSessionUseCase = restoreSessionUseCase,
        _signUpUseCase = signUpUseCase,
+       _signInWithGoogleUseCase = signInWithGoogleUseCase,
        super(const AuthInitial()) {
     on<AuthStarted>(_onAuthStarted);
     on<LoginSubmitted>(_onLoginSubmitted);
     on<SignupSubmitted>(_onSignupSubmitted);
     on<LogoutRequested>(_onLogoutRequested);
+    on<GoogleSignInRequested>(_onGoogleSignInRequested);
+    on<_SignedInExternally>(_onSignedInExternally);
+    _signInSubscription = watchSignInsUseCase().listen(
+      (session) => add(_SignedInExternally(session)),
+      onError: (Object error) => addError(error),
+    );
   }
 
   static const _genericLoginError = 'Unable to login. Please try again.';
@@ -35,6 +48,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final LogoutUseCase _logoutUseCase;
   final RestoreSessionUseCase _restoreSessionUseCase;
   final SignUpUseCase _signUpUseCase;
+  final SignInWithGoogleUseCase _signInWithGoogleUseCase;
+  StreamSubscription<AuthSession>? _signInSubscription;
+
+  /// True between launching the Google browser flow and its redirect, so
+  /// password logins (which also fire Supabase sign-in events) are not
+  /// handled twice.
+  bool _awaitingOAuth = false;
 
   Future<void> _onAuthStarted(
     AuthStarted event,
@@ -109,6 +129,39 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(const AuthLoading());
     await _logoutUseCase();
     emit(const AuthInitial());
+  }
+
+  Future<void> _onGoogleSignInRequested(
+    GoogleSignInRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    try {
+      _awaitingOAuth = true;
+      await _signInWithGoogleUseCase();
+      // The browser is open now. Stay on the login form: if the user backs
+      // out there is no callback, and the session arrives via the stream.
+    } on AuthFailure catch (error) {
+      _awaitingOAuth = false;
+      _emitTransientError(emit, error.message);
+    } catch (_) {
+      _awaitingOAuth = false;
+      _emitTransientError(emit, 'No se pudo iniciar sesión con Google.');
+    }
+  }
+
+  void _onSignedInExternally(
+    _SignedInExternally event,
+    Emitter<AuthState> emit,
+  ) {
+    if (!_awaitingOAuth) return;
+    _awaitingOAuth = false;
+    emit(AuthAuthenticated(session: event.session));
+  }
+
+  @override
+  Future<void> close() async {
+    await _signInSubscription?.cancel();
+    return super.close();
   }
 
   /// Surfaces an [AuthError] to listeners (snackbars, banners) and immediately

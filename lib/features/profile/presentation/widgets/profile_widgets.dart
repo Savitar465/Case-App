@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../domain/entities/profile_business.dart';
 import '../../domain/entities/profile_user.dart';
 
@@ -83,7 +84,7 @@ class ProfileHeader extends StatelessWidget {
               Text(
                 'Descubriendo negocios cerca de ti',
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.black45,
+                  color: context.palette.textTertiary,
                 ),
               ),
               const SizedBox(height: 12),
@@ -180,9 +181,9 @@ class FollowedBusinessCard extends StatelessWidget {
     return Container(
       width: 168,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFEDE7F6)),
+        border: Border.all(color: context.palette.border),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -244,9 +245,9 @@ class FollowedBusinessCard extends StatelessWidget {
                         business.address,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: Colors.black54,
+                          color: context.palette.textSecondary,
                         ),
                       ),
                     ),
@@ -312,9 +313,9 @@ class OwnedBusinessRow extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.palette.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFEDE7F6)),
+          border: Border.all(color: context.palette.border),
         ),
         child: Row(
           children: [
@@ -338,7 +339,7 @@ class OwnedBusinessRow extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             StatusPill(isActive: business.isActive),
-            const Icon(Icons.chevron_right, color: Colors.black38),
+            Icon(Icons.chevron_right, color: context.palette.textMuted),
           ],
         ),
       ),
@@ -357,13 +358,15 @@ class StatusPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        color: isActive ? AppColors.purpleSurface : const Color(0xFFEEEEEE),
+        color: isActive
+            ? context.palette.purpleSurface
+            : context.palette.mutedFill,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         isActive ? 'Activo' : 'Inactivo',
         style: TextStyle(
-          color: isActive ? AppColors.purple : Colors.black54,
+          color: isActive ? AppColors.purple : context.palette.textSecondary,
           fontWeight: FontWeight.w700,
           fontSize: 12,
         ),
@@ -413,7 +416,7 @@ class RegisterBusinessPromo extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.purpleSurface,
+        color: context.palette.purpleSurface,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
@@ -423,7 +426,7 @@ class RegisterBusinessPromo extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.palette.surface,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
@@ -444,9 +447,12 @@ class RegisterBusinessPromo extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
+                    Text(
                       'Regístralo gratis y llega a más clientes cerca de ti.',
-                      style: TextStyle(fontSize: 12, color: Colors.black54),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: context.palette.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -488,7 +494,7 @@ class BoostPromo extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.purpleSurface,
+        color: context.palette.purpleSurface,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
@@ -517,9 +523,12 @@ class BoostPromo extends StatelessWidget {
                   ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 2),
-                const Text(
+                Text(
                   'Aparece primero y consigue más clientes.',
-                  style: TextStyle(fontSize: 11.5, color: Colors.black54),
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    color: context.palette.textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -561,7 +570,7 @@ class BusinessThumbnail extends StatelessWidget {
     final placeholder = Container(
       width: width,
       height: height,
-      color: AppColors.purpleSurface,
+      color: context.palette.purpleSurface,
       alignment: Alignment.center,
       child: const Icon(Icons.storefront, color: AppColors.purple, size: 28),
     );
@@ -596,17 +605,17 @@ class EmptyHint extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 28),
       decoration: BoxDecoration(
-        color: const Color(0xFFFAF8FF),
+        color: context.palette.mutedFill,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFEDE7F6)),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         children: [
-          Icon(icon, color: Colors.black26, size: 30),
+          Icon(icon, color: context.palette.faint, size: 30),
           const SizedBox(height: 8),
           Text(
             message,
-            style: const TextStyle(color: Colors.black45, fontSize: 13),
+            style: TextStyle(color: context.palette.textTertiary, fontSize: 13),
           ),
         ],
       ),

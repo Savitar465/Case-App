@@ -1,4 +1,4 @@
-# Market App
+# Vikus App
 
 A simple market application scaffold using Flutter, Clean Architecture, and BLoC.
 

@@ -8,6 +8,9 @@ class OpeningRange extends Equatable {
   final int openMinutes;
   final int closeMinutes;
 
+  /// Covers the whole day (e.g. a 24h pharmacy).
+  bool get isAllDay => openMinutes == 0 && closeMinutes >= 1440;
+
   bool contains(int minutes) =>
       minutes >= openMinutes && minutes < closeMinutes;
 

@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:market_app/core/theme/app_colors.dart';
 import 'package:market_app/features/market/presentation/bloc/market_cubit.dart';
 
+import '../../../../core/theme/app_palette.dart';
+
 /// "Filtros · Distancia · Abierto · Ofertas" toggle chips.
 class FilterChipsRow extends StatelessWidget {
   const FilterChipsRow({super.key, required this.onDistanceUnavailable});
@@ -12,9 +14,7 @@ class FilterChipsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state = context
-        .watch<MarketCubit>()
-        .state;
+    final state = context.watch<MarketCubit>().state;
     final cubit = context.read<MarketCubit>();
     return SizedBox(
       height: 40,
@@ -84,10 +84,12 @@ class _FilterChip extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: Material(
-        color: selected ? AppColors.purpleSurface : Colors.white,
+        color: selected
+            ? context.palette.purpleSurface
+            : context.palette.surface,
         shape: StadiumBorder(
           side: BorderSide(
-            color: selected ? AppColors.purple : const Color(0xFFDCD5E5),
+            color: selected ? AppColors.purple : context.palette.border,
           ),
         ),
         child: InkWell(
@@ -105,7 +107,9 @@ class _FilterChip extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: selected ? AppColors.purple : Colors.black87,
+                    color: selected
+                        ? AppColors.purple
+                        : context.palette.textPrimary,
                   ),
                 ),
               ],

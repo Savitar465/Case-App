@@ -53,8 +53,8 @@ class Business extends Equatable {
 
   bool get hasLocation =>
       latitude != null &&
-          longitude != null &&
-          !(latitude == 0 && longitude == 0);
+      longitude != null &&
+      !(latitude == 0 && longitude == 0);
 
   /// Great-circle distance in meters to the given point, or null when this
   /// business has no stored location.
@@ -66,9 +66,9 @@ class Business extends Equatable {
     final dLng = rad(lng - longitude!);
     final a =
         math.pow(math.sin(dLat / 2), 2) +
-            math.cos(rad(latitude!)) *
-                math.cos(rad(lat)) *
-                math.pow(math.sin(dLng / 2), 2);
+        math.cos(rad(latitude!)) *
+            math.cos(rad(lat)) *
+            math.pow(math.sin(dLng / 2), 2);
     return earthRadius * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
   }
 
