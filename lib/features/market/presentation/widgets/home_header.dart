@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:market_app/core/theme/app_colors.dart';
 import 'package:market_app/features/market/presentation/bloc/market_cubit.dart';
 
-import '../../../../core/theme/app_palette.dart';
+export 'home_search_field.dart';
 
 /// "📍 Pando ⌄" location label plus the notifications bell.
 class HomeHeader extends StatelessWidget {
@@ -53,42 +53,6 @@ class HomeHeader extends StatelessWidget {
             icon: const Icon(Icons.notifications_none_rounded, size: 28),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Rounded "¿Qué quieres hoy?" search field. Filters the business lists.
-class HomeSearchField extends StatelessWidget {
-  const HomeSearchField({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-      child: TextField(
-        onChanged: context.read<MarketCubit>().search,
-        textInputAction: TextInputAction.search,
-        decoration: InputDecoration(
-          hintText: '¿Qué quieres hoy?',
-          hintStyle: TextStyle(color: context.palette.textTertiary),
-          prefixIcon: Icon(Icons.search, color: context.palette.textPrimary),
-          filled: true,
-          fillColor: context.palette.surface,
-          contentPadding: const EdgeInsets.symmetric(vertical: 14),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(28),
-            borderSide: BorderSide(color: context.palette.border),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(28),
-            borderSide: BorderSide(color: context.palette.border),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(28),
-            borderSide: const BorderSide(color: AppColors.purple, width: 1.5),
-          ),
-        ),
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:market_app/core/theme/app_colors.dart';
 import 'package:market_app/features/market/presentation/bloc/market_cubit.dart';
+import 'package:market_app/features/market/presentation/widgets/market_filters_sheet.dart';
 
 import '../../../../core/theme/app_palette.dart';
 
@@ -26,7 +27,11 @@ class FilterChipsRow extends StatelessWidget {
             label: 'Filtros',
             leading: const Icon(Icons.tune, size: 18),
             selected: state.hasActiveFilters,
-            onTap: state.hasActiveFilters ? cubit.clearFilters : null,
+            badgeCount: state.activeFiltersCount,
+            onTap: () => showMarketFiltersSheet(
+              context: context,
+              onDistanceUnavailable: onDistanceUnavailable,
+            ),
           ),
           _FilterChip(
             label: 'Distancia',
@@ -72,12 +77,14 @@ class _FilterChip extends StatelessWidget {
     required this.leading,
     required this.selected,
     required this.onTap,
+    this.badgeCount,
   });
 
   final String label;
   final Widget leading;
   final bool selected;
   final VoidCallback? onTap;
+  final int? badgeCount;
 
   @override
   Widget build(BuildContext context) {
@@ -112,6 +119,28 @@ class _FilterChip extends StatelessWidget {
                         : context.palette.textPrimary,
                   ),
                 ),
+                if (badgeCount != null && badgeCount! > 0) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.purple,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '$badgeCount',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        height: 1.1,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

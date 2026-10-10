@@ -10,6 +10,7 @@ import 'package:market_app/features/market/domain/repositories/market_repository
 import 'package:market_app/features/market/presentation/bloc/market_cubit.dart';
 import 'package:market_app/features/market/presentation/widgets/business_cards.dart';
 import 'package:market_app/features/market/presentation/widgets/category_strip.dart';
+import 'package:market_app/features/market/presentation/widgets/city_selection_sheet.dart';
 import 'package:market_app/features/market/presentation/widgets/filter_chips_row.dart';
 import 'package:market_app/features/market/presentation/widgets/home_bottom_nav.dart';
 import 'package:market_app/features/market/presentation/widgets/home_header.dart';
@@ -84,27 +85,65 @@ class _HomeViewState extends State<_HomeView> {
   /// (for the header) into the cubit. Silent unless the user asked for it.
   Future<void> _locate({required bool userInitiated}) async {
     final cubit = context.read<MarketCubit>();
+    if (!userInitiated && cubit.state.isManualLocation) return;
+
     final messenger = ScaffoldMessenger.of(context);
-    void explain(String message) {
+    void explain(
+      String message, {
+      String? actionLabel,
+      VoidCallback? onAction,
+    }) {
       if (userInitiated) {
-        messenger.showSnackBar(SnackBar(content: Text(message)));
+        messenger.hideCurrentSnackBar();
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(message),
+            action: actionLabel != null && onAction != null
+                ? SnackBarAction(label: actionLabel, onPressed: onAction)
+                : null,
+          ),
+        );
       }
     }
 
     try {
-      if (!await Geolocator.isLocationServiceEnabled()) {
-        explain('Activa la ubicación del dispositivo para ver distancias.');
-        return;
-      }
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        explain('Necesitamos permiso de ubicación para ver distancias.');
+      if (permission == LocationPermission.denied) {
+        explain('Permiso de ubicación denegado.');
         return;
       }
+      if (permission == LocationPermission.deniedForever) {
+        explain(
+          'El permiso de ubicación está desactivado en los ajustes.',
+          actionLabel: 'Ajustes',
+          onAction: () => Geolocator.openAppSettings(),
+        );
+        if (userInitiated) {
+          await Geolocator.openAppSettings();
+        }
+        return;
+      }
+
+      final isServiceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!isServiceEnabled) {
+        explain(
+          'Activa la ubicación de tu dispositivo.',
+          actionLabel: 'Activar',
+          onAction: () => Geolocator.openLocationSettings(),
+        );
+        if (userInitiated) {
+          await Geolocator.openLocationSettings();
+        }
+        return;
+      }
+
+      if (userInitiated) {
+        explain('Obteniendo tu ubicación actual...');
+      }
+
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.medium,
@@ -119,7 +158,11 @@ class _HomeViewState extends State<_HomeView> {
         );
         if (places.isNotEmpty) {
           final place = places.first;
-          label = [place.administrativeArea, place.locality]
+          label = [
+            place.administrativeArea,
+            place.locality,
+            place.subAdministrativeArea,
+          ]
               .whereType<String>()
               .map((s) => s.replaceFirst('Departamento de ', '').trim())
               .firstWhere((s) => s.isNotEmpty, orElse: () => '');
@@ -134,7 +177,12 @@ class _HomeViewState extends State<_HomeView> {
         latitude: position.latitude,
         longitude: position.longitude,
         label: label,
+        isManual: false,
       );
+
+      if (userInitiated) {
+        explain('Ubicación actualizada: ${label ?? "Ubicación actual"}');
+      }
     } catch (error) {
       debugPrint('Home location lookup failed: $error');
       explain('No pudimos obtener tu ubicación.');
@@ -172,7 +220,10 @@ class _HomeViewState extends State<_HomeView> {
                 slivers: [
                   SliverToBoxAdapter(
                     child: HomeHeader(
-                      onLocationTap: () => _locate(userInitiated: true),
+                      onLocationTap: () => showCitySelectionSheet(
+                        context: context,
+                        onUseCurrentLocation: () => _locate(userInitiated: true),
+                      ),
                     ),
                   ),
                   const SliverToBoxAdapter(child: HomeSearchField()),

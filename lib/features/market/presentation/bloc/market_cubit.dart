@@ -76,12 +76,42 @@ class MarketCubit extends Cubit<MarketState> {
   void toggleSortByDistance() =>
       emit(state.copyWith(sortByDistance: !state.sortByDistance));
 
+  void applyFilters({
+    bool? openNowOnly,
+    bool? offersOnly,
+    double? maxDistanceKm,
+    bool clearMaxDistance = false,
+    String? priceTier,
+    bool clearPriceTier = false,
+    String? selectedCategoryId,
+    bool clearSelectedCategory = false,
+  }) {
+    emit(
+      state.copyWith(
+        openNowOnly: openNowOnly ?? state.openNowOnly,
+        offersOnly: offersOnly ?? state.offersOnly,
+        maxDistanceKm: clearMaxDistance
+            ? null
+            : maxDistanceKm ?? state.maxDistanceKm,
+        clearMaxDistance: clearMaxDistance,
+        priceTier: clearPriceTier ? null : priceTier ?? state.priceTier,
+        clearPriceTier: clearPriceTier,
+        selectedCategoryId: clearSelectedCategory
+            ? null
+            : selectedCategoryId ?? state.selectedCategoryId,
+        clearSelectedCategory: clearSelectedCategory,
+      ),
+    );
+  }
+
   void clearFilters() => emit(
     state.copyWith(
       clearSelectedCategory: true,
       openNowOnly: false,
       offersOnly: false,
       sortByDistance: false,
+      clearMaxDistance: true,
+      clearPriceTier: true,
     ),
   );
 
@@ -89,12 +119,14 @@ class MarketCubit extends Cubit<MarketState> {
     required double latitude,
     required double longitude,
     String? label,
+    bool isManual = false,
   }) {
     emit(
       state.copyWith(
         userLatitude: latitude,
         userLongitude: longitude,
         locationLabel: label,
+        isManualLocation: isManual,
       ),
     );
   }
