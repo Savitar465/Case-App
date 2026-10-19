@@ -62,9 +62,7 @@ class CitySelectionSheet extends StatelessWidget {
       decoration: BoxDecoration(
         color: palette.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border(
-          top: BorderSide(color: palette.border, width: 1),
-        ),
+        border: Border(top: BorderSide(color: palette.border, width: 1)),
       ),
       child: SafeArea(
         top: false,
@@ -111,11 +109,11 @@ class CitySelectionSheet extends StatelessWidget {
                       city.name.toLowerCase(),
                   onTap: () {
                     context.read<MarketCubit>().setUserLocation(
-                          latitude: city.latitude,
-                          longitude: city.longitude,
-                          label: city.name,
-                          isManual: true,
-                        );
+                      latitude: city.latitude,
+                      longitude: city.longitude,
+                      label: city.name,
+                      isManual: true,
+                    );
                     Navigator.of(context).pop();
                   },
                 ),
@@ -153,10 +151,7 @@ class _SheetHeader extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 'Elige la ciudad donde quieres buscar negocios locales.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: palette.textSecondary,
-                ),
+                style: TextStyle(fontSize: 14, color: palette.textSecondary),
               ),
             ],
           ),
@@ -170,11 +165,7 @@ class _SheetHeader extends StatelessWidget {
             onTap: onClose,
             child: Padding(
               padding: const EdgeInsets.all(8),
-              child: Icon(
-                Icons.close,
-                size: 20,
-                color: palette.textPrimary,
-              ),
+              child: Icon(Icons.close, size: 20, color: palette.textPrimary),
             ),
           ),
         ),
@@ -287,9 +278,7 @@ class _CityTile extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.purple
-                        : palette.surface,
+                    color: isSelected ? AppColors.purple : palette.surface,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
@@ -304,8 +293,9 @@ class _CityTile extends StatelessWidget {
                     city.name,
                     style: TextStyle(
                       fontSize: 15,
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.w600,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w600,
                       color: isSelected
                           ? palette.textPrimary
                           : palette.textPrimary,

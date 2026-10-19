@@ -52,10 +52,7 @@ class _HomeSearchFieldState extends State<HomeSearchField> {
     super.dispose();
   }
 
-  List<SearchSuggestion> _computeSuggestions(
-    String query,
-    MarketState state,
-  ) {
+  List<SearchSuggestion> _computeSuggestions(String query, MarketState state) {
     final clean = query.trim().toLowerCase();
     if (clean.isEmpty) return const [];
 
@@ -114,8 +111,9 @@ class _HomeSearchFieldState extends State<HomeSearchField> {
 
     final query = _controller.text;
     final showSuggestions = _focusNode.hasFocus && query.trim().isNotEmpty;
-    final suggestions =
-        showSuggestions ? _computeSuggestions(query, state) : const <SearchSuggestion>[];
+    final suggestions = showSuggestions
+        ? _computeSuggestions(query, state)
+        : const <SearchSuggestion>[];
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
@@ -276,21 +274,21 @@ class _SuggestionRow extends StatelessWidget {
           children: [
             switch (suggestion) {
               BusinessSuggestion(:final business) => _BusinessAvatar(
-                  business: business,
-                ),
+                business: business,
+              ),
               CategorySuggestion() => Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: palette.purpleSurface,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.category_rounded,
-                    size: 18,
-                    color: AppColors.purple,
-                  ),
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: palette.purpleSurface,
+                  borderRadius: BorderRadius.circular(10),
                 ),
+                child: const Icon(
+                  Icons.category_rounded,
+                  size: 18,
+                  color: AppColors.purple,
+                ),
+              ),
             },
             const SizedBox(width: 12),
             Expanded(
@@ -300,8 +298,7 @@ class _SuggestionRow extends StatelessWidget {
                   Text(
                     switch (suggestion) {
                       BusinessSuggestion(:final business) => business.name,
-                      CategorySuggestion(:final category) =>
-                        category.nameEs,
+                      CategorySuggestion(:final category) => category.nameEs,
                     },
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -322,26 +319,23 @@ class _SuggestionRow extends StatelessWidget {
                     },
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: palette.textTertiary,
-                    ),
+                    style: TextStyle(fontSize: 12, color: palette.textTertiary),
                   ),
                 ],
               ),
             ),
             switch (suggestion) {
               BusinessSuggestion(:final business) => IconButton(
-                  tooltip: 'Ver negocio',
-                  icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-                  color: palette.textSecondary,
-                  onPressed: () => onOpenProfile(business),
-                ),
+                tooltip: 'Ver negocio',
+                icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                color: palette.textSecondary,
+                onPressed: () => onOpenProfile(business),
+              ),
               CategorySuggestion() => Icon(
-                  Icons.north_west_rounded,
-                  size: 16,
-                  color: palette.textTertiary,
-                ),
+                Icons.north_west_rounded,
+                size: 16,
+                color: palette.textTertiary,
+              ),
             },
           ],
         ),
@@ -391,4 +385,3 @@ class _BusinessAvatar extends StatelessWidget {
     );
   }
 }
-

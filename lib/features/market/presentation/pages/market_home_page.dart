@@ -158,14 +158,15 @@ class _HomeViewState extends State<_HomeView> {
         );
         if (places.isNotEmpty) {
           final place = places.first;
-          label = [
-            place.administrativeArea,
-            place.locality,
-            place.subAdministrativeArea,
-          ]
-              .whereType<String>()
-              .map((s) => s.replaceFirst('Departamento de ', '').trim())
-              .firstWhere((s) => s.isNotEmpty, orElse: () => '');
+          label =
+              [
+                    place.administrativeArea,
+                    place.locality,
+                    place.subAdministrativeArea,
+                  ]
+                  .whereType<String>()
+                  .map((s) => s.replaceFirst('Departamento de ', '').trim())
+                  .firstWhere((s) => s.isNotEmpty, orElse: () => '');
           if (label.isEmpty) label = null;
         }
       } catch (error) {
@@ -222,7 +223,8 @@ class _HomeViewState extends State<_HomeView> {
                     child: HomeHeader(
                       onLocationTap: () => showCitySelectionSheet(
                         context: context,
-                        onUseCurrentLocation: () => _locate(userInitiated: true),
+                        onUseCurrentLocation: () =>
+                            _locate(userInitiated: true),
                       ),
                     ),
                   ),

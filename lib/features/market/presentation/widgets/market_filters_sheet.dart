@@ -88,9 +88,7 @@ class _MarketFiltersSheetState extends State<MarketFiltersSheet> {
       decoration: BoxDecoration(
         color: palette.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border(
-          top: BorderSide(color: palette.border, width: 1),
-        ),
+        border: Border(top: BorderSide(color: palette.border, width: 1)),
       ),
       child: SafeArea(
         top: false,
@@ -126,8 +124,9 @@ class _MarketFiltersSheetState extends State<MarketFiltersSheet> {
                   selectedId: _selectedCategoryId,
                   onSelected: (id) {
                     setState(() {
-                      _selectedCategoryId =
-                          _selectedCategoryId == id ? null : id;
+                      _selectedCategoryId = _selectedCategoryId == id
+                          ? null
+                          : id;
                     });
                   },
                 ),
@@ -163,15 +162,14 @@ class _MarketFiltersSheetState extends State<MarketFiltersSheet> {
                 selectedTier: _selectedPriceTier,
                 onSelected: (tier) {
                   setState(() {
-                    _selectedPriceTier = _selectedPriceTier == tier ? null : tier;
+                    _selectedPriceTier = _selectedPriceTier == tier
+                        ? null
+                        : tier;
                   });
                 },
               ),
               const SizedBox(height: 28),
-              _FooterButtons(
-                onClear: _resetFilters,
-                onApply: _applyFilters,
-              ),
+              _FooterButtons(onClear: _resetFilters, onApply: _applyFilters),
             ],
           ),
         ),
@@ -287,13 +285,18 @@ class _DistanceSection extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: palette.purpleSurface,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
-                  isAny ? 'Cualquier distancia' : '${value.toStringAsFixed(1)} km',
+                  isAny
+                      ? 'Cualquier distancia'
+                      : '${value.toStringAsFixed(1)} km',
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -462,10 +465,7 @@ class _PriceTierChip extends StatelessWidget {
 }
 
 class _FooterButtons extends StatelessWidget {
-  const _FooterButtons({
-    required this.onClear,
-    required this.onApply,
-  });
+  const _FooterButtons({required this.onClear, required this.onApply});
 
   final VoidCallback onClear;
   final VoidCallback onApply;
@@ -501,10 +501,7 @@ class _FooterButtons extends StatelessWidget {
             ),
             child: const Text(
               'Aplicar filtros',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
             ),
           ),
         ),
