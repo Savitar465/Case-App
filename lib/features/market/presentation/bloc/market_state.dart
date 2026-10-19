@@ -10,9 +10,12 @@ class MarketState extends Equatable {
     this.openNowOnly = false,
     this.offersOnly = false,
     this.sortByDistance = false,
+    this.maxDistanceKm,
+    this.priceTier,
     this.userLatitude,
     this.userLongitude,
     this.locationLabel = 'Pando',
+    this.isManualLocation = false,
     this.isLoading = false,
     this.error,
   });
@@ -25,16 +28,29 @@ class MarketState extends Equatable {
   final bool openNowOnly;
   final bool offersOnly;
   final bool sortByDistance;
+  final double? maxDistanceKm;
+  final String? priceTier;
   final double? userLatitude;
   final double? userLongitude;
   final String locationLabel;
+  final bool isManualLocation;
   final bool isLoading;
   final String? error;
 
   bool get hasUserLocation => userLatitude != null && userLongitude != null;
 
-  bool get hasActiveFilters =>
-      selectedCategoryId != null || openNowOnly || offersOnly || sortByDistance;
+  int get activeFiltersCount {
+    var count = 0;
+    if (selectedCategoryId != null) count++;
+    if (openNowOnly) count++;
+    if (offersOnly) count++;
+    if (sortByDistance) count++;
+    if (maxDistanceKm != null) count++;
+    if (priceTier != null) count++;
+    return count;
+  }
+
+  bool get hasActiveFilters => activeFiltersCount > 0;
 
   Set<String> get businessIdsWithOffers => {
     for (final offer in offers) offer.businessId,
@@ -63,6 +79,15 @@ class MarketState extends Equatable {
         return false;
       }
       if (offersOnly && !withOffers.contains(b.id)) return false;
+      if (maxDistanceKm != null && hasUserLocation) {
+        final dist = distanceTo(b);
+        if (dist != null && dist > maxDistanceKm! * 1000) {
+          return false;
+        }
+      }
+      if (priceTier != null) {
+        if (priceTier == 'premium' && !b.isPro) return false;
+      }
       return true;
     }).toList();
     if (sortByDistance && hasUserLocation) {
@@ -85,9 +110,14 @@ class MarketState extends Equatable {
     bool? openNowOnly,
     bool? offersOnly,
     bool? sortByDistance,
+    double? maxDistanceKm,
+    bool clearMaxDistance = false,
+    String? priceTier,
+    bool clearPriceTier = false,
     double? userLatitude,
     double? userLongitude,
     String? locationLabel,
+    bool? isManualLocation,
     bool? isLoading,
     String? error,
     bool clearError = false,
@@ -103,9 +133,14 @@ class MarketState extends Equatable {
       openNowOnly: openNowOnly ?? this.openNowOnly,
       offersOnly: offersOnly ?? this.offersOnly,
       sortByDistance: sortByDistance ?? this.sortByDistance,
+      maxDistanceKm: clearMaxDistance
+          ? null
+          : maxDistanceKm ?? this.maxDistanceKm,
+      priceTier: clearPriceTier ? null : priceTier ?? this.priceTier,
       userLatitude: userLatitude ?? this.userLatitude,
       userLongitude: userLongitude ?? this.userLongitude,
       locationLabel: locationLabel ?? this.locationLabel,
+      isManualLocation: isManualLocation ?? this.isManualLocation,
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : error ?? this.error,
     );
@@ -121,9 +156,12 @@ class MarketState extends Equatable {
     openNowOnly,
     offersOnly,
     sortByDistance,
+    maxDistanceKm,
+    priceTier,
     userLatitude,
     userLongitude,
     locationLabel,
+    isManualLocation,
     isLoading,
     error,
   ];
