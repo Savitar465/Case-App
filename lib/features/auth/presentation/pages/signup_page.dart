@@ -5,6 +5,8 @@ import 'package:market_app/features/auth/presentation/bloc/auth_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_palette.dart';
 import '../../../market/presentation/pages/market_home_page.dart';
+import '../../../settings/presentation/pages/privacy_policy_page.dart';
+import '../../../settings/presentation/pages/terms_and_conditions_page.dart';
 import '../widgets/auth_widgets.dart';
 
 class SignupPage extends StatefulWidget {
@@ -68,6 +70,28 @@ class _SignupPageState extends State<SignupPage> {
     }
     // Google accounts are created on first sign-in, so this is the same flow.
     context.read<AuthBloc>().add(const GoogleSignInRequested());
+  }
+
+  void _openTerms() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        settings: const RouteSettings(
+          name: TermsAndConditionsPage.routeName,
+        ),
+        builder: (_) => const TermsAndConditionsPage(),
+      ),
+    );
+  }
+
+  void _openPrivacy() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        settings: const RouteSettings(
+          name: PrivacyPolicyPage.routeName,
+        ),
+        builder: (_) => const PrivacyPolicyPage(),
+      ),
+    );
   }
 
   Future<void> _showConfirmationDialog(String message) async {
@@ -186,6 +210,8 @@ class _SignupPageState extends State<SignupPage> {
                                   value: _acceptedTerms,
                                   onChanged: (v) =>
                                       setState(() => _acceptedTerms = v),
+                                  onTapTerms: _openTerms,
+                                  onTapPrivacy: _openPrivacy,
                                 ),
                                 const SizedBox(height: 18),
                                 AuthPrimaryButton(

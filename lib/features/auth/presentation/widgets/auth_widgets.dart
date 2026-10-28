@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -185,16 +186,54 @@ class _GoogleGlyph extends StatelessWidget {
   }
 }
 
-/// Terms-and-conditions acceptance checkbox row.
-class TermsCheckbox extends StatelessWidget {
+/// Terms-and-conditions acceptance checkbox row with clickable links.
+class TermsCheckbox extends StatefulWidget {
   const TermsCheckbox({
     super.key,
     required this.value,
     required this.onChanged,
+    this.onTapTerms,
+    this.onTapPrivacy,
   });
 
   final bool value;
   final ValueChanged<bool> onChanged;
+  final VoidCallback? onTapTerms;
+  final VoidCallback? onTapPrivacy;
+
+  @override
+  State<TermsCheckbox> createState() => _TermsCheckboxState();
+}
+
+class _TermsCheckboxState extends State<TermsCheckbox> {
+  late final TapGestureRecognizer _termsRecognizer;
+  late final TapGestureRecognizer _privacyRecognizer;
+  late final TapGestureRecognizer _toggleRecognizer;
+
+  @override
+  void initState() {
+    super.initState();
+    _termsRecognizer = TapGestureRecognizer()..onTap = widget.onTapTerms;
+    _privacyRecognizer = TapGestureRecognizer()..onTap = widget.onTapPrivacy;
+    _toggleRecognizer = TapGestureRecognizer()
+      ..onTap = () => widget.onChanged(!widget.value);
+  }
+
+  @override
+  void didUpdateWidget(covariant TermsCheckbox oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _termsRecognizer.onTap = widget.onTapTerms;
+    _privacyRecognizer.onTap = widget.onTapPrivacy;
+    _toggleRecognizer.onTap = () => widget.onChanged(!widget.value);
+  }
+
+  @override
+  void dispose() {
+    _termsRecognizer.dispose();
+    _privacyRecognizer.dispose();
+    _toggleRecognizer.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -206,8 +245,8 @@ class TermsCheckbox extends StatelessWidget {
           width: 24,
           height: 24,
           child: Checkbox(
-            value: value,
-            onChanged: (v) => onChanged(v ?? false),
+            value: widget.value,
+            onChanged: (v) => widget.onChanged(v ?? false),
             activeColor: AppColors.purple,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(4),
@@ -216,27 +255,43 @@ class TermsCheckbox extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: GestureDetector(
-            onTap: () => onChanged(!value),
-            child: Text.rich(
-              TextSpan(
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: context.palette.textSecondary,
-                ),
-                children: const [
-                  TextSpan(text: 'Acepto los '),
-                  TextSpan(
-                    text: 'Términos y Condiciones',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  TextSpan(text: ' y la '),
-                  TextSpan(
-                    text: 'Política de Privacidad',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  TextSpan(text: ' de ViKus'),
-                ],
+          child: Text.rich(
+            TextSpan(
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: context.palette.textSecondary,
               ),
+              children: [
+                TextSpan(
+                  text: 'Acepto los ',
+                  recognizer: _toggleRecognizer,
+                ),
+                TextSpan(
+                  text: 'Términos y Condiciones',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.purple,
+                    decoration: TextDecoration.underline,
+                  ),
+                  recognizer: _termsRecognizer,
+                ),
+                TextSpan(
+                  text: ' y la ',
+                  recognizer: _toggleRecognizer,
+                ),
+                TextSpan(
+                  text: 'Política de Privacidad',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.purple,
+                    decoration: TextDecoration.underline,
+                  ),
+                  recognizer: _privacyRecognizer,
+                ),
+                TextSpan(
+                  text: ' de ViKus',
+                  recognizer: _toggleRecognizer,
+                ),
+              ],
             ),
           ),
         ),
