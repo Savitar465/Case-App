@@ -23,6 +23,9 @@ abstract final class AppColors {
   /// Red used for location pins and "oferta" badges.
   static const Color offerRed = Color(0xFFE53935);
 
+  /// Pink "-20%" discount pill on the "Ofertas" tab.
+  static const Color offerPink = Color(0xFFFF2E63);
+
   /// Orange used for the fire icon and the "OFERTA" / "PRO" pills.
   static const Color flame = Color(0xFFFF7A1A);
 }
