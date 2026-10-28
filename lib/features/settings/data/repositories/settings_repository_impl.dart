@@ -5,6 +5,7 @@ import 'dart:io';
 import '../../domain/entities/account_settings.dart';
 import '../../domain/entities/notification_preferences.dart';
 import '../../domain/entities/settings_failure.dart';
+import '../../domain/entities/support_ticket.dart';
 import '../../domain/entities/theme_preference.dart';
 import '../../domain/repositories/settings_repository.dart';
 import '../datasources/remote/settings_remote_data_source.dart';
@@ -81,6 +82,10 @@ class SettingsRepositoryImpl implements SettingsRepository {
       () => _remote.submitSupportTicket(subject: subject, message: message),
     );
   }
+
+  @override
+  Future<List<SupportTicket>> getSupportTickets() =>
+      _guard('get support tickets', _remote.fetchSupportTickets);
 
   Future<T> _guard<T>(String action, Future<T> Function() body) async {
     try {

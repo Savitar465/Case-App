@@ -7,7 +7,10 @@ import '../widgets/settings_widgets.dart';
 import 'appearance_page.dart';
 import 'change_password_page.dart';
 import 'contact_support_page.dart';
+import 'help_center_page.dart';
 import 'notification_settings_page.dart';
+import 'privacy_policy_page.dart';
+import 'terms_and_conditions_page.dart';
 
 /// "Configuración" hub opened from the profile menu.
 class SettingsPage extends StatelessWidget {
@@ -111,12 +114,20 @@ class SettingsPage extends StatelessWidget {
               SettingsTile(
                 icon: Icons.shield_outlined,
                 label: 'Términos y condiciones',
-                onTap: () => _comingSoon(context, 'Términos y condiciones'),
+                onTap: () => _push(
+                  context,
+                  TermsAndConditionsPage.routeName,
+                  const TermsAndConditionsPage(),
+                ),
               ),
               SettingsTile(
                 icon: Icons.description_outlined,
                 label: 'Política de privacidad',
-                onTap: () => _comingSoon(context, 'La política de privacidad'),
+                onTap: () => _push(
+                  context,
+                  PrivacyPolicyPage.routeName,
+                  const PrivacyPolicyPage(),
+                ),
               ),
             ],
           ),
@@ -127,7 +138,11 @@ class SettingsPage extends StatelessWidget {
               SettingsTile(
                 icon: Icons.help_outline,
                 label: 'Centro de ayuda',
-                onTap: () => _comingSoon(context, 'El centro de ayuda'),
+                onTap: () => _push(
+                  context,
+                  HelpCenterPage.routeName,
+                  HelpCenterPage(isGuest: isGuest),
+                ),
               ),
               if (!isGuest)
                 SettingsTile(

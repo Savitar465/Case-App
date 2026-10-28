@@ -1,5 +1,6 @@
 import '../entities/account_settings.dart';
 import '../entities/notification_preferences.dart';
+import '../entities/support_ticket.dart';
 import '../entities/theme_preference.dart';
 
 abstract class SettingsRepository {
@@ -33,4 +34,6 @@ abstract class SettingsRepository {
     required String subject,
     required String message,
   });
+
+  Future<List<SupportTicket>> getSupportTickets();
 }
