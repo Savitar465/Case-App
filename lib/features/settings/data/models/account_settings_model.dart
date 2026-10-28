@@ -7,7 +7,9 @@ class AccountSettingsModel extends AccountSettings {
     required super.userId,
     required super.email,
     required super.fullName,
+    super.username,
     super.phone,
+    super.avatarUrl,
     super.theme,
     super.notifications,
     super.hasPassword,
@@ -15,17 +17,22 @@ class AccountSettingsModel extends AccountSettings {
 
   /// Builds the settings from a `public.users` row. The email comes from the
   /// auth user because it is the address Supabase actually signs in with.
+  /// [avatarUrl] is the already-resolved public URL of `avatar_url`.
   factory AccountSettingsModel.fromRemote(
     Map<String, dynamic> json, {
     required String email,
     required bool hasPassword,
+    String? avatarUrl,
   }) {
     final phone = (json['phone'] as String?)?.trim();
+    final username = (json['username'] as String?)?.trim();
     return AccountSettingsModel(
       userId: json['id'] as String,
       email: email,
       fullName: (json['full_name'] as String?)?.trim() ?? '',
+      username: (username == null || username.isEmpty) ? null : username,
       phone: (phone == null || phone.isEmpty) ? null : phone,
+      avatarUrl: avatarUrl,
       theme: themeFromRemote(json['preferred_theme'] as String?),
       notifications: NotificationPreferences(
         newOffers: json['notify_new_offers'] as bool? ?? true,

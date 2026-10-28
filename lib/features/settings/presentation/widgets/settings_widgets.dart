@@ -266,12 +266,14 @@ class SettingsPrimaryButton extends StatelessWidget {
     required this.onPressed,
     this.icon,
     this.isLoading = false,
+    this.color = AppColors.purple,
   });
 
   final String label;
   final VoidCallback? onPressed;
   final IconData? icon;
   final bool isLoading;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -280,8 +282,8 @@ class SettingsPrimaryButton extends StatelessWidget {
       child: FilledButton(
         onPressed: isLoading ? null : onPressed,
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.purple,
-          disabledBackgroundColor: AppColors.purple.withValues(alpha: 0.5),
+          backgroundColor: color,
+          disabledBackgroundColor: color.withValues(alpha: 0.5),
           minimumSize: const Size.fromHeight(52),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),

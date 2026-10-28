@@ -11,23 +11,32 @@ class ProfileRemoteDataSource {
 
   static const String _businessesTable = 'businesses';
   static const String _followsTable = 'business_follows';
+  static const String _usersTable = 'users';
   static const String _imagesBucket = 'vikus';
 
   Future<ProfileOverview> loadOverview() async {
     final user = _client.auth.currentUser;
-    final profileUser = ProfileUser(
-      isGuest: user == null,
-      id: user?.id,
-      email: user?.email,
-      displayName: _displayName(user),
-      location: user?.userMetadata?['location'] as String?,
-    );
-
     if (user == null) {
-      return ProfileOverview(user: profileUser);
+      return const ProfileOverview(user: ProfileUser.guest());
     }
 
     try {
+      // Username and photo are edited in "Editar perfil" and only live in
+      // public.users, not in the auth metadata.
+      final row = await _client
+          .from(_usersTable)
+          .select('username, avatar_url')
+          .eq('id', user.id)
+          .maybeSingle();
+      final profileUser = ProfileUser(
+        isGuest: false,
+        id: user.id,
+        email: user.email,
+        displayName: _displayName(user),
+        location: user.userMetadata?['location'] as String?,
+        username: row?['username'] as String?,
+        avatarUrl: _resolveImageUrl(row?['avatar_url'] as String?),
+      );
       final followed = await _fetchFollowed(user.id);
       final owned = await _fetchOwned(user.id);
       return ProfileOverview(

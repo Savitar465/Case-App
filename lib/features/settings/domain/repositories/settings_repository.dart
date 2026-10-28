@@ -6,9 +6,13 @@ abstract class SettingsRepository {
   /// Settings of the signed-in user, or `null` when browsing as a guest.
   Future<AccountSettings?> loadSettings();
 
+  /// Saves the "Editar perfil" form. [avatarFilePath] is a local image to
+  /// upload as the new profile photo; `null` keeps the current one.
   Future<AccountSettings> updateProfile({
     required String fullName,
+    required String username,
     String? phone,
+    String? avatarFilePath,
   });
 
   /// Sends the verification link to [newEmail]. The address only changes once

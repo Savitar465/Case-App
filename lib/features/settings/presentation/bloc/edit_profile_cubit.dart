@@ -45,10 +45,20 @@ class EditProfileCubit extends Cubit<EditProfileState> {
     }
   }
 
-  Future<void> save({required String fullName, String? phone}) async {
+  Future<void> save({
+    required String fullName,
+    required String username,
+    String? phone,
+    String? avatarFilePath,
+  }) async {
     emit(state.copyWith(isSaving: true, saved: false, clearError: true));
     try {
-      final settings = await _updateProfile(fullName: fullName, phone: phone);
+      final settings = await _updateProfile(
+        fullName: fullName,
+        username: username,
+        phone: phone,
+        avatarFilePath: avatarFilePath,
+      );
       emit(state.copyWith(isSaving: false, saved: true, settings: settings));
     } on SettingsFailure catch (failure) {
       emit(state.copyWith(isSaving: false, error: failure.message));
