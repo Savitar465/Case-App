@@ -22,10 +22,17 @@ class SettingsRepositoryImpl implements SettingsRepository {
   @override
   Future<AccountSettings> updateProfile({
     required String fullName,
+    required String username,
     String? phone,
+    String? avatarFilePath,
   }) {
     return _guard('update profile', () async {
-      await _remote.updateProfile(fullName: fullName, phone: phone);
+      await _remote.updateProfile(
+        fullName: fullName,
+        username: username,
+        phone: phone,
+        avatarFilePath: avatarFilePath,
+      );
       final settings = await _remote.fetchSettings();
       if (settings == null) {
         throw const SettingsFailure('Inicia sesión para continuar');

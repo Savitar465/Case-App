@@ -9,7 +9,9 @@ class AccountSettings extends Equatable {
     required this.userId,
     required this.email,
     required this.fullName,
+    this.username,
     this.phone,
+    this.avatarUrl,
     this.theme = ThemePreference.system,
     this.notifications = const NotificationPreferences(),
     this.hasPassword = true,
@@ -18,7 +20,13 @@ class AccountSettings extends Equatable {
   final String userId;
   final String email;
   final String fullName;
+
+  /// Public handle shown as `@username` (stored without the `@`).
+  final String? username;
   final String? phone;
+
+  /// Public URL of the profile photo, or `null` to show the initial.
+  final String? avatarUrl;
   final ThemePreference theme;
   final NotificationPreferences notifications;
 
@@ -31,7 +39,9 @@ class AccountSettings extends Equatable {
     userId,
     email,
     fullName,
+    username,
     phone,
+    avatarUrl,
     theme,
     notifications,
     hasPassword,

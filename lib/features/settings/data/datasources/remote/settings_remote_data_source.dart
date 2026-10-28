@@ -1,5 +1,9 @@
+import 'dart:developer' as developer;
+import 'dart:io';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../domain/entities/notification_preferences.dart';
 import '../../../domain/entities/theme_preference.dart';
@@ -12,6 +16,8 @@ class SettingsRemoteDataSource {
 
   static const String _usersTable = 'users';
   static const String _ticketsTable = 'support_tickets';
+  static const String _imagesBucket = 'vikus';
+  static const Uuid _uuid = Uuid();
 
   /// Deep link the email-change confirmation returns to. Same URL as the
   /// Google OAuth callback (AuthRemoteDataSource.oauthRedirectUrl), so the
@@ -43,20 +49,39 @@ class SettingsRemoteDataSource {
         row ?? {'id': user.id},
         email: user.email ?? '',
         hasPassword: hasPassword,
+        avatarUrl: _resolveImageUrl(row?['avatar_url'] as String?),
       );
     } on PostgrestException catch (error) {
       throw SettingsRemoteException(error.message);
     }
   }
 
-  Future<void> updateProfile({required String fullName, String? phone}) async {
+  Future<void> updateProfile({
+    required String fullName,
+    required String username,
+    String? phone,
+    String? avatarFilePath,
+  }) async {
     final user = _requireUser();
+    String? previousAvatar;
+    String? newAvatar;
     try {
+      if (avatarFilePath != null) {
+        final row = await _client
+            .from(_usersTable)
+            .select('avatar_url')
+            .eq('id', user.id)
+            .maybeSingle();
+        previousAvatar = row?['avatar_url'] as String?;
+        newAvatar = await _uploadAvatar(user.id, avatarFilePath);
+      }
       await _client
           .from(_usersTable)
           .update({
             'full_name': fullName,
+            'username': username,
             'phone': phone,
+            if (newAvatar != null) 'avatar_url': newAvatar,
             'updated_at': DateTime.now().toUtc().toIso8601String(),
           })
           .eq('id', user.id);
@@ -65,10 +90,79 @@ class SettingsRemoteDataSource {
         UserAttributes(data: {'full_name': fullName}),
       );
     } on PostgrestException catch (error) {
-      throw SettingsRemoteException(error.message);
+      if (newAvatar != null) await _removeAvatar(newAvatar);
+      throw SettingsRemoteException(_describeProfileError(error));
+    } on StorageException catch (error) {
+      throw SettingsRemoteException(
+        'No se pudo subir la foto: ${error.message}',
+      );
     } on AuthException catch (error) {
       throw SettingsRemoteException(_describeAuthError(error));
     }
+    if (newAvatar != null && previousAvatar != null) {
+      await _removeAvatar(previousAvatar);
+    }
+  }
+
+  /// Uploads to `avatars/<user id>/<uuid>.<ext>` (the folder the storage
+  /// policies let the owner manage) and returns the storage path.
+  Future<String> _uploadAvatar(String userId, String filePath) async {
+    final extension = _extensionOf(filePath);
+    final objectPath = 'avatars/$userId/${_uuid.v4()}.$extension';
+    await _client.storage
+        .from(_imagesBucket)
+        .upload(
+          objectPath,
+          File(filePath),
+          fileOptions: FileOptions(contentType: _contentType(extension)),
+        );
+    return objectPath;
+  }
+
+  Future<void> _removeAvatar(String objectPath) async {
+    // Only our own uploads; older rows may hold external URLs.
+    if (!objectPath.startsWith('avatars/')) return;
+    try {
+      await _client.storage.from(_imagesBucket).remove([objectPath]);
+    } on StorageException catch (error) {
+      // Cleanup only: an orphaned file must not fail the profile save.
+      developer.log(
+        'Settings: could not remove avatar $objectPath',
+        name: 'settings.data',
+        error: error,
+      );
+    }
+  }
+
+  String? _resolveImageUrl(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+    return _client.storage.from(_imagesBucket).getPublicUrl(raw);
+  }
+
+  String _extensionOf(String path) {
+    final dot = path.lastIndexOf('.');
+    if (dot == -1 || dot == path.length - 1) return 'jpg';
+    final extension = path.substring(dot + 1).toLowerCase();
+    return extension.length > 4 ? 'jpg' : extension;
+  }
+
+  String _contentType(String extension) => switch (extension) {
+    'png' => 'image/png',
+    'webp' => 'image/webp',
+    'heic' => 'image/heic',
+    'gif' => 'image/gif',
+    _ => 'image/jpeg',
+  };
+
+  /// `users_username_lower_key` / `users_username_format` from the
+  /// 20261028 migration.
+  String _describeProfileError(PostgrestException error) {
+    return switch (error.code) {
+      '23505' => 'Ese nombre de usuario ya está en uso',
+      '23514' => 'El nombre de usuario no es válido',
+      _ => error.message,
+    };
   }
 
   Future<void> requestEmailChange(String newEmail) async {

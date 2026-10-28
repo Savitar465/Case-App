@@ -23,6 +23,9 @@ class ProfileHeader extends StatelessWidget {
             CircleAvatar(
               radius: 38,
               backgroundColor: const Color(0xFFBFE3FF),
+              foregroundImage: user.avatarUrl != null
+                  ? NetworkImage(user.avatarUrl!)
+                  : null,
               child: Text(
                 user.initial,
                 style: const TextStyle(
@@ -61,6 +64,13 @@ class ProfileHeader extends StatelessWidget {
                   fontWeight: FontWeight.w800,
                 ),
               ),
+              if (user.username != null)
+                Text(
+                  '@${user.username}',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: context.palette.textSecondary,
+                  ),
+                ),
               const SizedBox(height: 4),
               Row(
                 children: [

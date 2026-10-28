@@ -6,6 +6,15 @@ class UpdateProfileUseCase {
 
   final SettingsRepository _repository;
 
-  Future<AccountSettings> call({required String fullName, String? phone}) =>
-      _repository.updateProfile(fullName: fullName, phone: phone);
+  Future<AccountSettings> call({
+    required String fullName,
+    required String username,
+    String? phone,
+    String? avatarFilePath,
+  }) => _repository.updateProfile(
+    fullName: fullName,
+    username: username,
+    phone: phone,
+    avatarFilePath: avatarFilePath,
+  );
 }

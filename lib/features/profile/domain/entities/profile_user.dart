@@ -8,6 +8,8 @@ class ProfileUser extends Equatable {
     this.displayName,
     this.email,
     this.location,
+    this.username,
+    this.avatarUrl,
   });
 
   const ProfileUser.guest()
@@ -15,13 +17,21 @@ class ProfileUser extends Equatable {
       id = null,
       displayName = null,
       email = null,
-      location = null;
+      location = null,
+      username = null,
+      avatarUrl = null;
 
   final bool isGuest;
   final String? id;
   final String? displayName;
   final String? email;
   final String? location;
+
+  /// Handle without the `@`.
+  final String? username;
+
+  /// Public URL of the profile photo.
+  final String? avatarUrl;
 
   /// Best label available for the user.
   String get name {
@@ -36,5 +46,13 @@ class ProfileUser extends Equatable {
   String get initial => name.isNotEmpty ? name[0].toUpperCase() : '?';
 
   @override
-  List<Object?> get props => [isGuest, id, displayName, email, location];
+  List<Object?> get props => [
+    isGuest,
+    id,
+    displayName,
+    email,
+    location,
+    username,
+    avatarUrl,
+  ];
 }
