@@ -15,6 +15,7 @@ import 'package:market_app/features/market/presentation/widgets/filter_chips_row
 import 'package:market_app/features/market/presentation/widgets/home_bottom_nav.dart';
 import 'package:market_app/features/market/presentation/widgets/home_header.dart';
 import 'package:market_app/features/market/presentation/widgets/offers_carousel.dart';
+import 'package:market_app/features/offers/presentation/pages/offers_page.dart';
 import 'package:market_app/features/profile/presentation/pages/profile_page.dart';
 
 import '../../../../core/theme/app_palette.dart';
@@ -41,11 +42,19 @@ class _MarketHomePageState extends State<MarketHomePage> {
         backgroundColor: context.palette.pageTinted,
         body: IndexedStack(
           index: _selectedIndex,
-          children: const [
-            _HomeView(),
-            Center(child: Text('Ofertas (Próximamente)')),
-            FavoritesPage(),
-            ProfilePage(),
+          children: [
+            const _HomeView(),
+            // Distances on the offer cards reuse the home's location.
+            BlocSelector<MarketCubit, MarketState, (double?, double?)>(
+              selector: (state) => (state.userLatitude, state.userLongitude),
+              builder: (context, location) => OffersPage(
+                isActive: _selectedIndex == 1,
+                userLatitude: location.$1,
+                userLongitude: location.$2,
+              ),
+            ),
+            const FavoritesPage(),
+            const ProfilePage(),
           ],
         ),
         bottomNavigationBar: HomeBottomNav(

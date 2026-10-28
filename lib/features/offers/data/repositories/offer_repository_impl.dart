@@ -3,6 +3,7 @@ import 'dart:io';
 
 import '../../../../core/reactive/replay_subject.dart';
 import '../../domain/entities/offer.dart';
+import '../../domain/entities/offer_detail.dart';
 import '../../domain/entities/offer_failure.dart';
 import '../../domain/repositories/offer_repository.dart';
 import '../datasources/remote/offer_remote_data_source.dart';
@@ -13,6 +14,8 @@ class OfferRepositoryImpl implements OfferRepository {
 
   final OfferRemoteDataSource _remote;
   final Map<String, ReplaySubject<List<Offer>>> _subjects = {};
+  final ReplaySubject<List<OfferDetail>> _activeSubject =
+      ReplaySubject<List<OfferDetail>>(const []);
 
   ReplaySubject<List<Offer>> _subjectFor(String businessId) {
     return _subjects.putIfAbsent(
@@ -38,6 +41,27 @@ class OfferRepositoryImpl implements OfferRepository {
   Future<Offer?> getOffer(String id) async {
     try {
       return await _remote.fetchOfferById(id);
+    } catch (error) {
+      throw _mapInfraError(error);
+    }
+  }
+
+  @override
+  Stream<List<OfferDetail>> watchActiveOffers() => _activeSubject.stream;
+
+  @override
+  Future<void> refreshActiveOffers() async {
+    try {
+      _activeSubject.add(await _remote.fetchActiveOffers());
+    } catch (error) {
+      throw _mapInfraError(error);
+    }
+  }
+
+  @override
+  Future<Set<String>> getFollowedBusinessIds() async {
+    try {
+      return await _remote.fetchFollowedBusinessIds();
     } catch (error) {
       throw _mapInfraError(error);
     }
