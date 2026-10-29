@@ -5,7 +5,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_palette.dart';
 import '../../../../core/utils/contact_launcher.dart';
 import '../../../../core/widgets/full_screen_image_viewer.dart';
-import '../../../../core/widgets/static_location_map.dart';
 import '../../../items/domain/repositories/item_repository.dart';
 import '../../../items/presentation/bloc/item_list_cubit.dart';
 import '../../../items/presentation/pages/item_list_page.dart';
@@ -246,18 +245,7 @@ class _ContentCard extends StatelessWidget {
           const SizedBox(height: 6),
           const _RatingSummary(),
           const SizedBox(height: 10),
-          _IconLine(
-            icon: Icons.location_on,
-            iconColor: Colors.redAccent,
-            text: business.address,
-          ),
-          if (business.latitude != 0 || business.longitude != 0) ...[
-            const SizedBox(height: 12),
-            StaticLocationMap(
-              latitude: business.latitude,
-              longitude: business.longitude,
-            ),
-          ],
+          _LocationSection(business: business),
           const SizedBox(height: 6),
           _ScheduleLine(business: business),
           if (description != null && description.isNotEmpty) ...[
@@ -908,7 +896,7 @@ class _BusinessImagesState extends State<_BusinessImages> {
                       url,
                       fit: BoxFit.cover,
                       width: double.infinity,
-                      errorBuilder: (_, _, _) => _ImagePlaceholder(
+                      errorBuilder: (context, error, stackTrace) => _ImagePlaceholder(
                         height: _height,
                         child: Icon(
                           Icons.storefront,
@@ -1036,25 +1024,83 @@ class _ScheduleLine extends StatelessWidget {
   }
 }
 
-class _IconLine extends StatelessWidget {
-  const _IconLine({
-    required this.icon,
-    required this.iconColor,
-    required this.text,
-  });
 
-  final IconData icon;
-  final Color iconColor;
-  final String text;
+
+class _LocationSection extends StatelessWidget {
+  const _LocationSection({required this.business});
+
+  final Business business;
+
+  void _openMap(BuildContext context) {
+    ContactLauncher.openGoogleMaps(
+      context,
+      latitude: business.latitude,
+      longitude: business.longitude,
+      address: business.address,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final hasCoords = business.latitude != 0 || business.longitude != 0;
+    final hasAddress = business.address.trim().isNotEmpty;
+
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: iconColor, size: 18),
-        const SizedBox(width: 6),
-        Expanded(child: Text(text)),
+        InkWell(
+          onTap: (hasCoords || hasAddress) ? () => _openMap(context) : null,
+          borderRadius: BorderRadius.circular(8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.location_on, color: Colors.redAccent, size: 18),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  business.address,
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (hasCoords || hasAddress) ...[
+          const SizedBox(height: 6),
+          InkWell(
+            onTap: () => _openMap(context),
+            borderRadius: BorderRadius.circular(8),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 2),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.map_outlined,
+                    size: 16,
+                    color: AppColors.purple,
+                  ),
+                  SizedBox(width: 6),
+                  Text(
+                    'Ver en Google Maps',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.purple,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                  SizedBox(width: 4),
+                  Icon(
+                    Icons.open_in_new,
+                    size: 13,
+                    color: AppColors.purple,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

@@ -23,6 +23,34 @@ abstract final class ContactLauncher {
     return _open(context, normalized);
   }
 
+  /// Opens Google Maps using either coordinates or a text address.
+  static Future<void> openGoogleMaps(
+    BuildContext context, {
+    required double latitude,
+    required double longitude,
+    String? address,
+  }) {
+    final query = (latitude != 0 || longitude != 0)
+        ? '$latitude,$longitude'
+        : (address != null && address.trim().isNotEmpty)
+            ? Uri.encodeComponent(address.trim())
+            : null;
+
+    if (query == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No hay ubicación disponible')),
+        );
+      }
+      return Future.value();
+    }
+
+    return _open(
+      context,
+      'https://www.google.com/maps/search/?api=1&query=$query',
+    );
+  }
+
   /// Opens a social-network entry. Bare handles/usernames are expanded into the
   /// network's profile URL.
   static Future<void> openSocial(
