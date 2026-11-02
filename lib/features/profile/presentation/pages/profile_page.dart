@@ -175,13 +175,17 @@ class _ProfileViewState extends State<_ProfileView> {
     }
   }
 
-  void _openBoost(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
+  Future<void> _openBoost(BuildContext context) async {
+    final cubit = context.read<ProfileCubit>();
+    final boosted = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
         settings: const RouteSettings(name: BoostBusinessPage.routeName),
         builder: (_) => const BoostBusinessPage(),
       ),
     );
+    if (boosted == true) {
+      cubit.load();
+    }
   }
 
   Future<void> _openRegister(BuildContext context) async {

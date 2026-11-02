@@ -3,22 +3,33 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_palette.dart';
+import '../../../business_register/presentation/pages/register_intro_page.dart';
 import '../../domain/entities/plan.dart';
+import '../../domain/entities/plan_business.dart';
 import '../../domain/repositories/plans_repository.dart';
+import '../../domain/usecases/get_my_businesses_use_case.dart';
 import '../../domain/usecases/get_plans_use_case.dart';
+import '../../domain/usecases/subscribe_business_use_case.dart';
 import '../bloc/plans_cubit.dart';
 
 class BoostBusinessPage extends StatelessWidget {
-  const BoostBusinessPage({super.key});
+  const BoostBusinessPage({super.key, this.initialBusinessId});
+
+  final String? initialBusinessId;
 
   static const routeName = '/boost-business';
 
   @override
   Widget build(BuildContext context) {
+    final repo = context.read<PlansRepository>();
     return BlocProvider(
       create: (context) => PlansCubit(
-        getPlans: GetPlansUseCase(context.read<PlansRepository>()),
-      )..loadPlans(),
+        getPlans: GetPlansUseCase(repo),
+        getMyBusinesses: GetMyBusinessesUseCase(repo),
+        subscribeBusiness: SubscribeBusinessUseCase(repo),
+      )
+        ..loadPlans()
+        ..loadMyBusinesses(preselectedBusinessId: initialBusinessId),
       child: const _BoostBusinessView(),
     );
   }
@@ -46,36 +57,78 @@ class _BoostBusinessViewState extends State<_BoostBusinessView> {
 
   void _onContinue(BuildContext context, Plan? selectedPlan) {
     if (selectedPlan == null) return;
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(
-            'Has seleccionado el plan ${selectedPlan.name} (${selectedPlan.price.toInt()} Bs). ¡Pronto podrás completar tu suscripción!',
-          ),
-          backgroundColor: AppColors.purple,
-        ),
-      );
+
+    context.read<PlansCubit>().loadMyBusinesses();
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => BlocProvider.value(
+        value: context.read<PlansCubit>(),
+        child: _SelectBusinessSheet(selectedPlan: selectedPlan),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.palette.page,
-      appBar: AppBar(
-        backgroundColor: context.palette.page,
-        elevation: 0,
-        leading: IconButton(
-          tooltip: 'Volver',
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-          color: context.palette.textPrimary,
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-      ),
-      body: SafeArea(
-        child: BlocBuilder<PlansCubit, PlansState>(
-          builder: (context, state) {
-            return Column(
+    return BlocConsumer<PlansCubit, PlansState>(
+      listenWhen: (previous, current) =>
+          previous.subscriptionSuccess != current.subscriptionSuccess ||
+          (current.error != null && previous.error != current.error),
+      listener: (context, state) {
+        if (state.subscriptionSuccess) {
+          ScaffoldMessenger.of(context)
+            ..clearSnackBars()
+            ..showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: Colors.white),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        state.successMessage ?? '¡Suscripción exitosa!',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: AppColors.purple,
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          Navigator.of(context).pop(true);
+        } else if (state.error != null) {
+          ScaffoldMessenger.of(context)
+            ..clearSnackBars()
+            ..showSnackBar(
+              SnackBar(
+                content: Text(state.error!),
+                backgroundColor: Colors.redAccent,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          context.read<PlansCubit>().clearError();
+        }
+      },
+      builder: (context, state) {
+        return Scaffold(
+          backgroundColor: context.palette.page,
+          appBar: AppBar(
+            backgroundColor: context.palette.page,
+            elevation: 0,
+            leading: IconButton(
+              tooltip: 'Volver',
+              icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+              color: context.palette.textPrimary,
+              onPressed: () => Navigator.of(context).maybePop(),
+            ),
+          ),
+          body: SafeArea(
+            child: Column(
               children: [
                 Expanded(
                   child: ListView(
@@ -171,8 +224,383 @@ class _BoostBusinessViewState extends State<_BoostBusinessView> {
                   ),
                 ),
               ],
-            );
-          },
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SelectBusinessSheet extends StatelessWidget {
+  const _SelectBusinessSheet({required this.selectedPlan});
+
+  final Plan selectedPlan;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocConsumer<PlansCubit, PlansState>(
+      listener: (context, state) {
+        if (state.subscriptionSuccess) {
+          Navigator.of(context).pop();
+        }
+      },
+      builder: (context, state) {
+        return Container(
+          decoration: BoxDecoration(
+            color: context.palette.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            boxShadow: [
+              BoxShadow(
+                color: context.palette.shadow,
+                blurRadius: 20,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 12),
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: context.palette.border,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppColors.purple.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.storefront,
+                          color: AppColors.purple,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Elige tu negocio',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: context.palette.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Plan ${selectedPlan.name} · ${selectedPlan.price.toInt()} Bs/mes',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: context.palette.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 20),
+                        color: context.palette.textMuted,
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 24),
+                if (state.isLoadingBusinesses)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Center(
+                      child: CircularProgressIndicator(color: AppColors.purple),
+                    ),
+                  )
+                else if (state.myBusinesses.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 24,
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.store_mall_directory_outlined,
+                          size: 48,
+                          color: context.palette.textMuted,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'No tienes negocios registrados',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: context.palette.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Registra tu negocio para poder adquirir una suscripción ViKuS Pro y disfrutar de todos sus beneficios.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: context.palette.textSecondary,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            Navigator.of(context).pushNamed(
+                              RegisterIntroPage.routeName,
+                            );
+                          },
+                          icon: const Icon(Icons.add_business, size: 18),
+                          label: const Text('Registrar negocio'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.purple,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Selecciona el negocio al que deseas activar el plan:',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: context.palette.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 280),
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            itemCount: state.myBusinesses.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 10),
+                            itemBuilder: (context, index) {
+                              final business = state.myBusinesses[index];
+                              final isSelected =
+                                  state.selectedBusiness?.id == business.id;
+
+                              return _BusinessChoiceTile(
+                                business: business,
+                                isSelected: isSelected,
+                                onSelect: () => context
+                                    .read<PlansCubit>()
+                                    .selectBusiness(business),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: ElevatedButton(
+                            onPressed: (state.selectedBusiness != null &&
+                                    !state.isSubscribing)
+                                ? () => context
+                                    .read<PlansCubit>()
+                                    .subscribeSelectedBusiness()
+                                : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.purple,
+                              foregroundColor: Colors.white,
+                              disabledBackgroundColor:
+                                  AppColors.purple.withValues(alpha: 0.4),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(26),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: state.isSubscribing
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Text(
+                                    state.selectedBusiness != null
+                                        ? 'Activar ViKuS Pro para ${state.selectedBusiness!.name}'
+                                        : 'Selecciona un negocio',
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _BusinessChoiceTile extends StatelessWidget {
+  const _BusinessChoiceTile({
+    required this.business,
+    required this.isSelected,
+    required this.onSelect,
+  });
+
+  final PlanBusiness business;
+  final bool isSelected;
+  final VoidCallback onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? AppColors.purple.withValues(alpha: 0.08)
+            : context.palette.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isSelected ? AppColors.purple : context.palette.border,
+          width: isSelected ? 2 : 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onSelect,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    color: AppColors.purple.withValues(alpha: 0.12),
+                    child: business.imageUrl != null &&
+                            business.imageUrl!.isNotEmpty
+                        ? Image.network(
+                            business.imageUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Icon(
+                              Icons.storefront,
+                              color: AppColors.purple,
+                              size: 22,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.storefront,
+                            color: AppColors.purple,
+                            size: 22,
+                          ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              business.name,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: context.palette.textPrimary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (business.isPro) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.purple.withValues(alpha: 0.18),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Text(
+                                'Pro Activo',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.purple,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      if (business.address.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          business.address,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: context.palette.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                _CustomRadio(isSelected: isSelected),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -321,7 +749,8 @@ class _ReasonCard extends StatelessWidget {
                 if (isExpanded) ...[
                   const SizedBox(height: 10),
                   Padding(
-                    padding: const EdgeInsets.only(left: 54, right: 8, bottom: 6),
+                    padding:
+                        const EdgeInsets.only(left: 54, right: 8, bottom: 6),
                     child: Text(
                       description,
                       style: TextStyle(
@@ -515,4 +944,3 @@ class ContainerDot extends StatelessWidget {
     );
   }
 }
-

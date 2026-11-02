@@ -306,7 +306,12 @@ class _AppRoot extends StatelessWidget {
                 MarketHomePage.routeName: (_) => const MarketHomePage(),
                 LoginPage.routeName: (_) => const LoginPage(),
                 SignupPage.routeName: (_) => const SignupPage(),
-                BoostBusinessPage.routeName: (_) => const BoostBusinessPage(),
+                BoostBusinessPage.routeName: (context) {
+                  final args = ModalRoute.of(context)?.settings.arguments;
+                  return BoostBusinessPage(
+                    initialBusinessId: args is String ? args : null,
+                  );
+                },
               },
             ),
           ),

@@ -58,7 +58,12 @@ class App extends StatelessWidget {
           TermsAndConditionsPage.routeName: (_) =>
               const TermsAndConditionsPage(),
           PrivacyPolicyPage.routeName: (_) => const PrivacyPolicyPage(),
-          BoostBusinessPage.routeName: (_) => const BoostBusinessPage(),
+          BoostBusinessPage.routeName: (context) {
+            final args = ModalRoute.of(context)?.settings.arguments;
+            return BoostBusinessPage(
+              initialBusinessId: args is String ? args : null,
+            );
+          },
         },
       ),
     );

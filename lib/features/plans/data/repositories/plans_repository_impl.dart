@@ -3,7 +3,9 @@ import 'dart:developer' as developer;
 import 'dart:io';
 
 import '../../domain/entities/plan.dart';
+import '../../domain/entities/plan_business.dart';
 import '../../domain/entities/plans_failure.dart';
+import '../../domain/entities/pro_subscription.dart';
 import '../../domain/repositories/plans_repository.dart';
 import '../datasources/remote/plans_remote_data_source.dart';
 
@@ -27,6 +29,41 @@ class PlansRepositoryImpl implements PlansRepository {
     }
   }
 
+  @override
+  Future<List<PlanBusiness>> getMyBusinesses() async {
+    try {
+      return await _remote.fetchMyBusinesses();
+    } catch (error) {
+      developer.log(
+        'Plans: getMyBusinesses failed',
+        name: 'plans.data',
+        error: error,
+      );
+      throw _mapInfraError(error);
+    }
+  }
+
+  @override
+  Future<ProSubscription> subscribeBusiness({
+    required String businessId,
+    required Plan plan,
+  }) async {
+    try {
+      return await _remote.subscribeBusiness(
+        businessId: businessId,
+        planId: plan.id,
+        priceBought: plan.price,
+      );
+    } catch (error) {
+      developer.log(
+        'Plans: subscribeBusiness failed for $businessId and plan ${plan.id}',
+        name: 'plans.data',
+        error: error,
+      );
+      throw _mapInfraError(error);
+    }
+  }
+
   PlansFailure _mapInfraError(Object error) {
     if (error is PlansFailure) return error;
     if (error is PlansRemoteException) return PlansFailure(error.message);
@@ -39,4 +76,3 @@ class PlansRepositoryImpl implements PlansRepository {
     return PlansFailure(error.toString());
   }
 }
-
