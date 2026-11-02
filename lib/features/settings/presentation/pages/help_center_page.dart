@@ -95,8 +95,7 @@ class _HelpCenterView extends StatelessWidget {
               else if (state.error != null && state.tickets.isEmpty)
                 _ErrorCard(
                   error: state.error!,
-                  onRetry: () =>
-                      context.read<HelpCenterCubit>().loadTickets(),
+                  onRetry: () => context.read<HelpCenterCubit>().loadTickets(),
                 )
               else if (state.tickets.isEmpty)
                 _EmptyTicketsCard(
@@ -424,11 +423,7 @@ class _StatusBadge extends StatelessWidget {
         const Color(0xFFF5F5F5),
         const Color(0xFF616161),
       ),
-      _ => (
-        'Pendiente',
-        const Color(0xFFFFF8E1),
-        const Color(0xFFE65100),
-      ),
+      _ => ('Pendiente', const Color(0xFFFFF8E1), const Color(0xFFE65100)),
     };
 
     return Container(
@@ -439,11 +434,7 @@ class _StatusBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: fg,
-        ),
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: fg),
       ),
     );
   }
@@ -536,10 +527,7 @@ class _ErrorCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          TextButton(
-            onPressed: onRetry,
-            child: const Text('Reintentar'),
-          ),
+          TextButton(onPressed: onRetry, child: const Text('Reintentar')),
         ],
       ),
     );
@@ -612,4 +600,3 @@ class _GuestHelpCenterView extends StatelessWidget {
     );
   }
 }
-

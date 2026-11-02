@@ -154,12 +154,7 @@ class SettingsRemoteDataSource {
           .select()
           .eq('user_id', user.id)
           .order('created_at', ascending: false);
-      return rows
-          .map(
-            (row) =>
-                SupportTicketModel.fromRemote(row),
-          )
-          .toList();
+      return rows.map((row) => SupportTicketModel.fromRemote(row)).toList();
     } on PostgrestException catch (error) {
       throw SettingsRemoteException(error.message);
     }

@@ -60,4 +60,3 @@ class ProSubscription extends Equatable {
     createdAt,
   ];
 }
-

@@ -23,13 +23,14 @@ class BoostBusinessPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final repo = context.read<PlansRepository>();
     return BlocProvider(
-      create: (context) => PlansCubit(
-        getPlans: GetPlansUseCase(repo),
-        getMyBusinesses: GetMyBusinessesUseCase(repo),
-        subscribeBusiness: SubscribeBusinessUseCase(repo),
-      )
-        ..loadPlans()
-        ..loadMyBusinesses(preselectedBusinessId: initialBusinessId),
+      create: (context) =>
+          PlansCubit(
+              getPlans: GetPlansUseCase(repo),
+              getMyBusinesses: GetMyBusinessesUseCase(repo),
+              subscribeBusiness: SubscribeBusinessUseCase(repo),
+            )
+            ..loadPlans()
+            ..loadMyBusinesses(preselectedBusinessId: initialBusinessId),
       child: const _BoostBusinessView(),
     );
   }
@@ -206,8 +207,9 @@ class _BoostBusinessViewState extends State<_BoostBusinessView> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.purple,
                         foregroundColor: Colors.white,
-                        disabledBackgroundColor:
-                            AppColors.purple.withValues(alpha: 0.4),
+                        disabledBackgroundColor: AppColors.purple.withValues(
+                          alpha: 0.4,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(28),
                         ),
@@ -371,9 +373,9 @@ class _SelectBusinessSheet extends StatelessWidget {
                         ElevatedButton.icon(
                           onPressed: () {
                             Navigator.of(context).pop();
-                            Navigator.of(context).pushNamed(
-                              RegisterIntroPage.routeName,
-                            );
+                            Navigator.of(
+                              context,
+                            ).pushNamed(RegisterIntroPage.routeName);
                           },
                           icon: const Icon(Icons.add_business, size: 18),
                           label: const Text('Registrar negocio'),
@@ -430,17 +432,18 @@ class _SelectBusinessSheet extends StatelessWidget {
                           width: double.infinity,
                           height: 52,
                           child: ElevatedButton(
-                            onPressed: (state.selectedBusiness != null &&
+                            onPressed:
+                                (state.selectedBusiness != null &&
                                     !state.isSubscribing)
                                 ? () => context
-                                    .read<PlansCubit>()
-                                    .subscribeSelectedBusiness()
+                                      .read<PlansCubit>()
+                                      .subscribeSelectedBusiness()
                                 : null,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.purple,
                               foregroundColor: Colors.white,
-                              disabledBackgroundColor:
-                                  AppColors.purple.withValues(alpha: 0.4),
+                              disabledBackgroundColor: AppColors.purple
+                                  .withValues(alpha: 0.4),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(26),
                               ),
@@ -521,7 +524,8 @@ class _BusinessChoiceTile extends StatelessWidget {
                     width: 44,
                     height: 44,
                     color: AppColors.purple.withValues(alpha: 0.12),
-                    child: business.imageUrl != null &&
+                    child:
+                        business.imageUrl != null &&
                             business.imageUrl!.isNotEmpty
                         ? Image.network(
                             business.imageUrl!,
@@ -629,11 +633,7 @@ class _VikusProBrandHeader extends StatelessWidget {
               ),
             ],
           ),
-          child: const Icon(
-            Icons.storefront,
-            color: Colors.white,
-            size: 24,
-          ),
+          child: const Icon(Icons.storefront, color: Colors.white, size: 24),
         ),
         const SizedBox(width: 12),
         RichText(
@@ -717,11 +717,7 @@ class _ReasonCard extends StatelessWidget {
                         color: AppColors.purple.withValues(alpha: 0.16),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Icon(
-                        icon,
-                        color: AppColors.purple,
-                        size: 20,
-                      ),
+                      child: Icon(icon, color: AppColors.purple, size: 20),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -749,8 +745,11 @@ class _ReasonCard extends StatelessWidget {
                 if (isExpanded) ...[
                   const SizedBox(height: 10),
                   Padding(
-                    padding:
-                        const EdgeInsets.only(left: 54, right: 8, bottom: 6),
+                    padding: const EdgeInsets.only(
+                      left: 54,
+                      right: 8,
+                      bottom: 6,
+                    ),
                     child: Text(
                       description,
                       style: TextStyle(
@@ -920,11 +919,7 @@ class _CustomRadio extends StatelessWidget {
         ),
         color: isSelected ? AppColors.purple : Colors.transparent,
       ),
-      child: isSelected
-          ? const Center(
-              child: ContainerDot(),
-            )
-          : null,
+      child: isSelected ? const Center(child: ContainerDot()) : null,
     );
   }
 }

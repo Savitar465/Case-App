@@ -13,12 +13,7 @@ class Plan extends Equatable {
   final double price;
   final bool isActive;
 
-  Plan copyWith({
-    String? id,
-    String? name,
-    double? price,
-    bool? isActive,
-  }) {
+  Plan copyWith({String? id, String? name, double? price, bool? isActive}) {
     return Plan(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -30,4 +25,3 @@ class Plan extends Equatable {
   @override
   List<Object?> get props => [id, name, price, isActive];
 }
-

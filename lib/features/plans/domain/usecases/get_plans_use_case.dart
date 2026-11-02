@@ -8,4 +8,3 @@ class GetPlansUseCase {
 
   Future<List<Plan>> call() => _repository.getPlans();
 }
-

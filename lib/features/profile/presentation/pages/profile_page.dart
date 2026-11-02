@@ -163,7 +163,9 @@ class _ProfileViewState extends State<_ProfileView> {
         );
       } else if (context.mounted) {
         messenger.showSnackBar(
-          const SnackBar(content: Text('No se pudo abrir el perfil del negocio')),
+          const SnackBar(
+            content: Text('No se pudo abrir el perfil del negocio'),
+          ),
         );
       }
     } catch (_) {
@@ -332,9 +334,7 @@ class _BusinessTabView extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(
-              child: CreateBusinessButton(onPressed: onCreate),
-            ),
+            Expanded(child: CreateBusinessButton(onPressed: onCreate)),
             if (overview.owned.length > 1) ...[
               const SizedBox(width: 12),
               OutlinedButton(

@@ -53,8 +53,9 @@ class PlansState extends Equatable {
       subscriptionSuccess: clearSuccess
           ? false
           : subscriptionSuccess ?? this.subscriptionSuccess,
-      successMessage:
-          clearSuccess ? null : successMessage ?? this.successMessage,
+      successMessage: clearSuccess
+          ? null
+          : successMessage ?? this.successMessage,
       error: clearError ? null : error ?? this.error,
     );
   }

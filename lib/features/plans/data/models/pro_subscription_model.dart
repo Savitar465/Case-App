@@ -47,4 +47,3 @@ class ProSubscriptionModel extends ProSubscription {
     return DateTime.tryParse(value.toString())?.toUtc();
   }
 }
-

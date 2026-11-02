@@ -896,14 +896,15 @@ class _BusinessImagesState extends State<_BusinessImages> {
                       url,
                       fit: BoxFit.cover,
                       width: double.infinity,
-                      errorBuilder: (context, error, stackTrace) => _ImagePlaceholder(
-                        height: _height,
-                        child: Icon(
-                          Icons.storefront,
-                          size: 64,
-                          color: context.palette.textMuted,
-                        ),
-                      ),
+                      errorBuilder: (context, error, stackTrace) =>
+                          _ImagePlaceholder(
+                            height: _height,
+                            child: Icon(
+                              Icons.storefront,
+                              size: 64,
+                              color: context.palette.textMuted,
+                            ),
+                          ),
                     ),
                   );
                 },
@@ -1024,8 +1025,6 @@ class _ScheduleLine extends StatelessWidget {
   }
 }
 
-
-
 class _LocationSection extends StatelessWidget {
   const _LocationSection({required this.business});
 
@@ -1075,11 +1074,7 @@ class _LocationSection extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.map_outlined,
-                    size: 16,
-                    color: AppColors.purple,
-                  ),
+                  Icon(Icons.map_outlined, size: 16, color: AppColors.purple),
                   SizedBox(width: 6),
                   Text(
                     'Ver en Google Maps',
@@ -1091,11 +1086,7 @@ class _LocationSection extends StatelessWidget {
                     ),
                   ),
                   SizedBox(width: 4),
-                  Icon(
-                    Icons.open_in_new,
-                    size: 13,
-                    color: AppColors.purple,
-                  ),
+                  Icon(Icons.open_in_new, size: 13, color: AppColors.purple),
                 ],
               ),
             ),

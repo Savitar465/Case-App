@@ -10,10 +10,5 @@ class SubscribeBusinessUseCase {
   Future<ProSubscription> call({
     required String businessId,
     required Plan plan,
-  }) =>
-      _repository.subscribeBusiness(
-        businessId: businessId,
-        plan: plan,
-      );
+  }) => _repository.subscribeBusiness(businessId: businessId, plan: plan);
 }
-

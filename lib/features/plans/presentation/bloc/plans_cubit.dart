@@ -15,10 +15,10 @@ class PlansCubit extends Cubit<PlansState> {
     required GetPlansUseCase getPlans,
     required GetMyBusinessesUseCase getMyBusinesses,
     required SubscribeBusinessUseCase subscribeBusiness,
-  })  : _getPlans = getPlans,
-        _getMyBusinesses = getMyBusinesses,
-        _subscribeBusiness = subscribeBusiness,
-        super(const PlansState());
+  }) : _getPlans = getPlans,
+       _getMyBusinesses = getMyBusinesses,
+       _subscribeBusiness = subscribeBusiness,
+       super(const PlansState());
 
   final GetPlansUseCase _getPlans;
   final GetMyBusinessesUseCase _getMyBusinesses;
@@ -36,29 +36,32 @@ class PlansCubit extends Cubit<PlansState> {
       final fetched = await _getPlans();
       final plans = fetched.isNotEmpty ? fetched : defaultFallbackPlans;
       final currentSelected = state.selectedPlan;
-      final selected = (currentSelected != null && plans.contains(currentSelected))
+      final selected =
+          (currentSelected != null && plans.contains(currentSelected))
           ? currentSelected
           : plans.first;
 
-      emit(state.copyWith(
-        isLoading: false,
-        plans: plans,
-        selectedPlan: selected,
-      ));
+      emit(
+        state.copyWith(isLoading: false, plans: plans, selectedPlan: selected),
+      );
     } on PlansFailure catch (failure) {
-      emit(state.copyWith(
-        isLoading: false,
-        plans: defaultFallbackPlans,
-        selectedPlan: defaultFallbackPlans.first,
-        error: failure.message,
-      ));
+      emit(
+        state.copyWith(
+          isLoading: false,
+          plans: defaultFallbackPlans,
+          selectedPlan: defaultFallbackPlans.first,
+          error: failure.message,
+        ),
+      );
     } catch (_) {
-      emit(state.copyWith(
-        isLoading: false,
-        plans: defaultFallbackPlans,
-        selectedPlan: defaultFallbackPlans.first,
-        error: 'No se pudieron cargar los planes',
-      ));
+      emit(
+        state.copyWith(
+          isLoading: false,
+          plans: defaultFallbackPlans,
+          selectedPlan: defaultFallbackPlans.first,
+          error: 'No se pudieron cargar los planes',
+        ),
+      );
     }
   }
 
@@ -85,21 +88,22 @@ class PlansCubit extends Cubit<PlansState> {
         selected = businesses.first;
       }
 
-      emit(state.copyWith(
-        isLoadingBusinesses: false,
-        myBusinesses: businesses,
-        selectedBusiness: selected,
-      ));
+      emit(
+        state.copyWith(
+          isLoadingBusinesses: false,
+          myBusinesses: businesses,
+          selectedBusiness: selected,
+        ),
+      );
     } on PlansFailure catch (failure) {
-      emit(state.copyWith(
-        isLoadingBusinesses: false,
-        error: failure.message,
-      ));
+      emit(state.copyWith(isLoadingBusinesses: false, error: failure.message));
     } catch (_) {
-      emit(state.copyWith(
-        isLoadingBusinesses: false,
-        error: 'No se pudieron cargar tus negocios',
-      ));
+      emit(
+        state.copyWith(
+          isLoadingBusinesses: false,
+          error: 'No se pudieron cargar tus negocios',
+        ),
+      );
     }
   }
 
@@ -120,17 +124,12 @@ class PlansCubit extends Cubit<PlansState> {
       return;
     }
 
-    emit(state.copyWith(
-      isSubscribing: true,
-      clearError: true,
-      clearSuccess: true,
-    ));
+    emit(
+      state.copyWith(isSubscribing: true, clearError: true, clearSuccess: true),
+    );
 
     try {
-      await _subscribeBusiness(
-        businessId: business.id,
-        plan: plan,
-      );
+      await _subscribeBusiness(businessId: business.id, plan: plan);
 
       // Refresh locally the updated business in state
       final updatedList = state.myBusinesses.map((b) {
@@ -140,24 +139,25 @@ class PlansCubit extends Cubit<PlansState> {
         return b;
       }).toList();
 
-      emit(state.copyWith(
-        isSubscribing: false,
-        subscriptionSuccess: true,
-        myBusinesses: updatedList,
-        selectedBusiness: business.copyWith(isPro: true),
-        successMessage:
-            '¡Tu negocio "${business.name}" ahora es ViKuS Pro con el plan ${plan.name}!',
-      ));
+      emit(
+        state.copyWith(
+          isSubscribing: false,
+          subscriptionSuccess: true,
+          myBusinesses: updatedList,
+          selectedBusiness: business.copyWith(isPro: true),
+          successMessage:
+              '¡Tu negocio "${business.name}" ahora es ViKuS Pro con el plan ${plan.name}!',
+        ),
+      );
     } on PlansFailure catch (failure) {
-      emit(state.copyWith(
-        isSubscribing: false,
-        error: failure.message,
-      ));
+      emit(state.copyWith(isSubscribing: false, error: failure.message));
     } catch (_) {
-      emit(state.copyWith(
-        isSubscribing: false,
-        error: 'Ocurrió un error al procesar la suscripción',
-      ));
+      emit(
+        state.copyWith(
+          isSubscribing: false,
+          error: 'Ocurrió un error al procesar la suscripción',
+        ),
+      );
     }
   }
 

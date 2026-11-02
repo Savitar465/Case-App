@@ -75,9 +75,7 @@ class _SignupPageState extends State<SignupPage> {
   void _openTerms() {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        settings: const RouteSettings(
-          name: TermsAndConditionsPage.routeName,
-        ),
+        settings: const RouteSettings(name: TermsAndConditionsPage.routeName),
         builder: (_) => const TermsAndConditionsPage(),
       ),
     );
@@ -86,9 +84,7 @@ class _SignupPageState extends State<SignupPage> {
   void _openPrivacy() {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        settings: const RouteSettings(
-          name: PrivacyPolicyPage.routeName,
-        ),
+        settings: const RouteSettings(name: PrivacyPolicyPage.routeName),
         builder: (_) => const PrivacyPolicyPage(),
       ),
     );

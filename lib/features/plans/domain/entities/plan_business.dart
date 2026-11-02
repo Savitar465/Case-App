@@ -36,13 +36,5 @@ class PlanBusiness extends Equatable {
   }
 
   @override
-  List<Object?> get props => [
-    id,
-    name,
-    address,
-    imageUrl,
-    isPro,
-    proExpiresAt,
-  ];
+  List<Object?> get props => [id, name, address, imageUrl, isPro, proExpiresAt];
 }
-

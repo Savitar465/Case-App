@@ -58,4 +58,3 @@ class SupportTicket extends Equatable {
     updatedAt,
   ];
 }
-

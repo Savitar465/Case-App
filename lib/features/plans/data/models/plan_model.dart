@@ -18,12 +18,6 @@ class PlanModel extends Plan {
   }
 
   Map<String, dynamic> toRemoteMap() {
-    return {
-      'id': id,
-      'name': name,
-      'price': price,
-      'is_active': isActive,
-    };
+    return {'id': id, 'name': name, 'price': price, 'is_active': isActive};
   }
 }
-

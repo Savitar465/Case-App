@@ -27,4 +27,3 @@ class HelpCenterState extends Equatable {
   @override
   List<Object?> get props => [isLoading, tickets, error];
 }
-

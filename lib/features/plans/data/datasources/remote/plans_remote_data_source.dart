@@ -51,8 +51,7 @@ class PlansRemoteDataSource {
 
       final coverImages = <String, String>{};
       try {
-        final businessIds =
-            businessList.map((b) => b['id'] as String).toList();
+        final businessIds = businessList.map((b) => b['id'] as String).toList();
         final imageRows =
             await _client
                     .from('business_images')
@@ -133,12 +132,15 @@ class PlansRemoteDataSource {
           .select()
           .single();
 
-      await _client.from(_businessesTable).update({
-        'is_pro': true,
-        'pro_expires_at': endDate.toIso8601String(),
-        'updated_at': now.toIso8601String(),
-        'updated_by': user.id,
-      }).eq('id', businessId);
+      await _client
+          .from(_businessesTable)
+          .update({
+            'is_pro': true,
+            'pro_expires_at': endDate.toIso8601String(),
+            'updated_at': now.toIso8601String(),
+            'updated_by': user.id,
+          })
+          .eq('id', businessId);
 
       return ProSubscriptionModel.fromRemote(response);
     } on PostgrestException catch (error) {

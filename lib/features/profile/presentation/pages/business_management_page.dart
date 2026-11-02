@@ -41,10 +41,9 @@ class BusinessManagementPage extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           BoostPromo(
-            onActivate: () => Navigator.of(context).pushNamed(
-              '/boost-business',
-              arguments: business.id,
-            ),
+            onActivate: () => Navigator.of(
+              context,
+            ).pushNamed('/boost-business', arguments: business.id),
           ),
           const SizedBox(height: 24),
           const _SectionTitle('Tu rendimiento'),

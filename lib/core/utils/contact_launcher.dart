@@ -33,8 +33,8 @@ abstract final class ContactLauncher {
     final query = (latitude != 0 || longitude != 0)
         ? '$latitude,$longitude'
         : (address != null && address.trim().isNotEmpty)
-            ? Uri.encodeComponent(address.trim())
-            : null;
+        ? Uri.encodeComponent(address.trim())
+        : null;
 
     if (query == null) {
       if (context.mounted) {

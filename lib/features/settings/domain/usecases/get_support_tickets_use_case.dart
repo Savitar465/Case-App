@@ -8,4 +8,3 @@ class GetSupportTicketsUseCase {
 
   Future<List<SupportTicket>> call() => _repository.getSupportTickets();
 }
-

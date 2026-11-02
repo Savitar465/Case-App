@@ -261,10 +261,7 @@ class _TermsCheckboxState extends State<TermsCheckbox> {
                 color: context.palette.textSecondary,
               ),
               children: [
-                TextSpan(
-                  text: 'Acepto los ',
-                  recognizer: _toggleRecognizer,
-                ),
+                TextSpan(text: 'Acepto los ', recognizer: _toggleRecognizer),
                 TextSpan(
                   text: 'Términos y Condiciones',
                   style: const TextStyle(
@@ -274,10 +271,7 @@ class _TermsCheckboxState extends State<TermsCheckbox> {
                   ),
                   recognizer: _termsRecognizer,
                 ),
-                TextSpan(
-                  text: ' y la ',
-                  recognizer: _toggleRecognizer,
-                ),
+                TextSpan(text: ' y la ', recognizer: _toggleRecognizer),
                 TextSpan(
                   text: 'Política de Privacidad',
                   style: const TextStyle(
@@ -287,10 +281,7 @@ class _TermsCheckboxState extends State<TermsCheckbox> {
                   ),
                   recognizer: _privacyRecognizer,
                 ),
-                TextSpan(
-                  text: ' de ViKus',
-                  recognizer: _toggleRecognizer,
-                ),
+                TextSpan(text: ' de ViKus', recognizer: _toggleRecognizer),
               ],
             ),
           ),

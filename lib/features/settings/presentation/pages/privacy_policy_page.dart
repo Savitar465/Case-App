@@ -294,4 +294,3 @@ class _SupportPrompt extends StatelessWidget {
     );
   }
 }
-

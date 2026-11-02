@@ -22,7 +22,7 @@ class SupportTicketModel extends SupportTicket {
       response: map['response'] as String?,
       createdAt: map['created_at'] != null
           ? DateTime.tryParse(map['created_at'].toString())?.toLocal() ??
-              DateTime.now()
+                DateTime.now()
           : DateTime.now(),
       updatedAt: map['updated_at'] != null
           ? DateTime.tryParse(map['updated_at'].toString())?.toLocal()
@@ -43,4 +43,3 @@ class SupportTicketModel extends SupportTicket {
     };
   }
 }
-

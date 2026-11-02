@@ -11,4 +11,3 @@ class PlansFailure extends Equatable implements Exception {
   @override
   String toString() => 'PlansFailure: $message';
 }
-

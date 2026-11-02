@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_palette.dart';
@@ -558,10 +558,7 @@ class BoostPromo extends StatelessWidget {
             ),
             child: const Text(
               'Activar',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
-              ),
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
             ),
           ),
         ],
@@ -846,7 +843,9 @@ class _ActiveStatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isActive ? const Color(0xFF00E676) : context.palette.textMuted;
+    final color = isActive
+        ? const Color(0xFF00E676)
+        : context.palette.textMuted;
     final bg = isActive
         ? const Color(0xFF00E676).withValues(alpha: 0.14)
         : context.palette.mutedFill;
@@ -863,10 +862,7 @@ class _ActiveStatusPill extends StatelessWidget {
           Container(
             width: 6,
             height: 6,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 5),
           Text(

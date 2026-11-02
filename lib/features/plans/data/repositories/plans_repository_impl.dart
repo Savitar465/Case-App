@@ -20,11 +20,7 @@ class PlansRepositoryImpl implements PlansRepository {
     try {
       return await _remote.fetchPlans();
     } catch (error) {
-      developer.log(
-        'Plans: getPlans failed',
-        name: 'plans.data',
-        error: error,
-      );
+      developer.log('Plans: getPlans failed', name: 'plans.data', error: error);
       throw _mapInfraError(error);
     }
   }
