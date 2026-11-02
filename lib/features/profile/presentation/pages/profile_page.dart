@@ -5,10 +5,14 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_palette.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/pages/login_page.dart';
+import '../../../business/domain/repositories/business_repository.dart';
+import '../../../business/presentation/pages/business_profile_page.dart';
 import '../../../business_register/presentation/pages/register_intro_page.dart';
+import '../../../plans/presentation/pages/boost_business_page.dart';
 import '../../../settings/presentation/pages/edit_profile_page.dart';
 import '../../../settings/presentation/pages/settings_page.dart';
 import '../../domain/entities/profile_business.dart';
+import '../../domain/entities/profile_overview.dart';
 import '../../domain/entities/profile_user.dart';
 import '../../domain/repositories/profile_repository.dart';
 import '../bloc/profile_cubit.dart';
@@ -16,8 +20,7 @@ import '../widgets/profile_widgets.dart';
 import 'business_management_page.dart';
 import 'my_businesses_page.dart';
 
-/// "Mi perfil" tab. Shows the user header, the businesses they follow and
-/// either a "register a business" promo or their owned businesses.
+/// "Mi perfil" tab with "Mi Perfil" and "Mi Negocio" tabs.
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
@@ -31,8 +34,15 @@ class ProfilePage extends StatelessWidget {
   }
 }
 
-class _ProfileView extends StatelessWidget {
+class _ProfileView extends StatefulWidget {
   const _ProfileView();
+
+  @override
+  State<_ProfileView> createState() => _ProfileViewState();
+}
+
+class _ProfileViewState extends State<_ProfileView> {
+  int _selectedTabIndex = 0;
 
   void _comingSoon(BuildContext context, String feature) {
     ScaffoldMessenger.of(context)
@@ -137,6 +147,43 @@ class _ProfileView extends StatelessWidget {
     );
   }
 
+  Future<void> _openBusinessProfile(
+    BuildContext context,
+    ProfileBusiness business,
+  ) async {
+    final repository = context.read<BusinessRepository>();
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final fullBusiness = await repository.getBusiness(business.id);
+      if (fullBusiness != null && context.mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => BusinessProfilePage(business: fullBusiness),
+          ),
+        );
+      } else if (context.mounted) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('No se pudo abrir el perfil del negocio')),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Error al abrir el perfil del negocio')),
+        );
+      }
+    }
+  }
+
+  void _openBoost(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        settings: const RouteSettings(name: BoostBusinessPage.routeName),
+        builder: (_) => const BoostBusinessPage(),
+      ),
+    );
+  }
+
   Future<void> _openRegister(BuildContext context) async {
     final cubit = context.read<ProfileCubit>();
     final created = await Navigator.of(context).push<bool>(
@@ -174,27 +221,32 @@ class _ProfileView extends StatelessWidget {
                     user: overview.user,
                     onEdit: () => _openEditProfile(context, overview.user),
                   ),
-                  const SizedBox(height: 28),
-                  _FollowedSection(
-                    businesses: overview.followed,
-                    onSeeAll: () =>
-                        _comingSoon(context, 'Ver todos los negocios'),
-                    onUnfollow: (id) =>
-                        context.read<ProfileCubit>().unfollow(id),
+                  const SizedBox(height: 20),
+                  ProfileSegmentedTabs(
+                    selectedIndex: _selectedTabIndex,
+                    onChanged: (index) =>
+                        setState(() => _selectedTabIndex = index),
                   ),
-                  const SizedBox(height: 28),
-                  if (overview.hasBusinesses)
-                    _OwnedSection(
-                      businesses: overview.owned,
-                      onSeeAll: () => _openMyBusinesses(context),
-                      onOpen: (business) => _openManagement(context, business),
-                      onCreate: () => _openRegister(context),
-                      onBoost: () => _comingSoon(context, 'Impulsar negocio'),
-                    )
-                  else
-                    RegisterBusinessPromo(
-                      onRegister: () => _openRegister(context),
+                  const SizedBox(height: 22),
+                  if (_selectedTabIndex == 0) ...[
+                    _FollowedSection(
+                      businesses: overview.followed,
+                      onSeeAll: () =>
+                          _comingSoon(context, 'Ver todos los negocios'),
+                      onUnfollow: (id) =>
+                          context.read<ProfileCubit>().unfollow(id),
                     ),
+                  ] else ...[
+                    _BusinessTabView(
+                      overview: overview,
+                      onEdit: (business) => _openManagement(context, business),
+                      onView: (business) =>
+                          _openBusinessProfile(context, business),
+                      onBoost: () => _openBoost(context),
+                      onCreate: () => _openRegister(context),
+                      onSeeAll: () => _openMyBusinesses(context),
+                    ),
+                  ],
                 ],
               ),
             );
@@ -225,6 +277,74 @@ class _TopBar extends StatelessWidget {
           onPressed: onMenu,
           icon: const Icon(Icons.menu),
           color: AppColors.purple,
+        ),
+      ],
+    );
+  }
+}
+
+class _BusinessTabView extends StatelessWidget {
+  const _BusinessTabView({
+    required this.overview,
+    required this.onEdit,
+    required this.onView,
+    required this.onBoost,
+    required this.onCreate,
+    required this.onSeeAll,
+  });
+
+  final ProfileOverview overview;
+  final ValueChanged<ProfileBusiness> onEdit;
+  final ValueChanged<ProfileBusiness> onView;
+  final VoidCallback onBoost;
+  final VoidCallback onCreate;
+  final VoidCallback onSeeAll;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!overview.hasBusinesses) {
+      return Column(
+        children: [
+          RegisterBusinessPromo(onRegister: onCreate),
+          const SizedBox(height: 16),
+          BoostPromo(onActivate: onBoost),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final business in overview.owned) ...[
+          OwnedBusinessDetailCard(
+            business: business,
+            onEdit: () => onEdit(business),
+            onView: () => onView(business),
+          ),
+          const SizedBox(height: 14),
+        ],
+        BoostPromo(onActivate: onBoost),
+        const SizedBox(height: 18),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: CreateBusinessButton(onPressed: onCreate),
+            ),
+            if (overview.owned.length > 1) ...[
+              const SizedBox(width: 12),
+              OutlinedButton(
+                onPressed: onSeeAll,
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(0, 56),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: const Text('Ver todos'),
+              ),
+            ],
+          ],
         ),
       ],
     );
@@ -265,52 +385,13 @@ class _FollowedSection extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               clipBehavior: Clip.none,
               itemCount: businesses.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 14),
+              separatorBuilder: (context, index) => const SizedBox(width: 14),
               itemBuilder: (_, index) => FollowedBusinessCard(
                 business: businesses[index],
                 onUnfollow: () => onUnfollow(businesses[index].id),
               ),
             ),
           ),
-      ],
-    );
-  }
-}
-
-class _OwnedSection extends StatelessWidget {
-  const _OwnedSection({
-    required this.businesses,
-    required this.onSeeAll,
-    required this.onOpen,
-    required this.onCreate,
-    required this.onBoost,
-  });
-
-  final List<ProfileBusiness> businesses;
-  final VoidCallback onSeeAll;
-  final ValueChanged<ProfileBusiness> onOpen;
-  final VoidCallback onCreate;
-  final VoidCallback onBoost;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SectionHeader(
-          title: 'Mis negocios',
-          actionLabel: 'Ver todos',
-          onAction: onSeeAll,
-        ),
-        const SizedBox(height: 12),
-        for (final business in businesses) ...[
-          OwnedBusinessRow(business: business, onTap: () => onOpen(business)),
-          const SizedBox(height: 12),
-        ],
-        const SizedBox(height: 4),
-        CreateBusinessButton(onPressed: onCreate),
-        const SizedBox(height: 16),
-        BoostPromo(onActivate: onBoost),
       ],
     );
   }

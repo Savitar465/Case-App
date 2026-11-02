@@ -12,6 +12,7 @@ import 'package:market_app/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:market_app/features/auth/presentation/pages/login_page.dart';
 import 'package:market_app/features/auth/presentation/pages/signup_page.dart';
 import 'package:market_app/features/market/presentation/pages/market_home_page.dart';
+import 'package:market_app/features/plans/presentation/pages/boost_business_page.dart';
 import 'package:market_app/features/settings/presentation/pages/privacy_policy_page.dart';
 import 'package:market_app/features/settings/presentation/pages/terms_and_conditions_page.dart';
 
@@ -57,6 +58,7 @@ class App extends StatelessWidget {
           TermsAndConditionsPage.routeName: (_) =>
               const TermsAndConditionsPage(),
           PrivacyPolicyPage.routeName: (_) => const PrivacyPolicyPage(),
+          BoostBusinessPage.routeName: (_) => const BoostBusinessPage(),
         },
       ),
     );
