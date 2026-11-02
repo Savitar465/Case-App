@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 import '../../../domain/entities/notification_preferences.dart';
 import '../../../domain/entities/theme_preference.dart';
 import '../../models/account_settings_model.dart';
+import '../../models/support_ticket_model.dart';
 
 class SettingsRemoteDataSource {
   SettingsRemoteDataSource(this._client);
@@ -234,6 +235,20 @@ class SettingsRemoteDataSource {
         'message': message,
         'created_by': user.id,
       });
+    } on PostgrestException catch (error) {
+      throw SettingsRemoteException(error.message);
+    }
+  }
+
+  Future<List<SupportTicketModel>> fetchSupportTickets() async {
+    final user = _requireUser();
+    try {
+      final rows = await _client
+          .from(_ticketsTable)
+          .select()
+          .eq('user_id', user.id)
+          .order('created_at', ascending: false);
+      return rows.map((row) => SupportTicketModel.fromRemote(row)).toList();
     } on PostgrestException catch (error) {
       throw SettingsRemoteException(error.message);
     }

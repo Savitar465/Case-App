@@ -21,7 +21,6 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscure = true;
-  bool _acceptedTerms = false;
 
   @override
   void dispose() {
@@ -32,18 +31,6 @@ class _LoginPageState extends State<LoginPage> {
 
   void _submit() {
     FocusScope.of(context).unfocus();
-    if (!_acceptedTerms) {
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Acepta los Términos y la Política de Privacidad para continuar',
-            ),
-          ),
-        );
-      return;
-    }
     if (_formKey.currentState!.validate()) {
       context.read<AuthBloc>().add(
         LoginSubmitted(
@@ -61,18 +48,6 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _signInWithGoogle() {
-    if (!_acceptedTerms) {
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Acepta los Términos y la Política de Privacidad para continuar',
-            ),
-          ),
-        );
-      return;
-    }
     context.read<AuthBloc>().add(const GoogleSignInRequested());
   }
 
@@ -162,13 +137,7 @@ class _LoginPageState extends State<LoginPage> {
                               isLoading: isLoading,
                               onPressed: _submit,
                             ),
-                            const SizedBox(height: 16),
-                            TermsCheckbox(
-                              value: _acceptedTerms,
-                              onChanged: (v) =>
-                                  setState(() => _acceptedTerms = v),
-                            ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 18),
                             const LabeledDivider(label: 'O continúa con'),
                             const SizedBox(height: 16),
                             GoogleButton(onPressed: _signInWithGoogle),

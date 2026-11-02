@@ -493,7 +493,7 @@ class RegisterBusinessPromo extends StatelessWidget {
   }
 }
 
-/// "Impulsar negocio" promo with an "Activar" button.
+/// "Impulsar negocio" promo with an "Activar" button matching the profile design.
 class BoostPromo extends StatelessWidget {
   const BoostPromo({super.key, required this.onActivate});
 
@@ -502,41 +502,52 @@ class BoostPromo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: context.palette.purpleSurface,
-        borderRadius: BorderRadius.circular(18),
+        color: context.palette.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: context.palette.border),
+        boxShadow: [
+          BoxShadow(
+            color: context.palette.shadow,
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
-            decoration: const BoxDecoration(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
               color: AppColors.purple,
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(14),
             ),
             child: const Icon(
               Icons.rocket_launch,
               color: Colors.white,
-              size: 20,
+              size: 24,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Impulsar negocio',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Aparece primero y consigue más clientes.',
                   style: TextStyle(
-                    fontSize: 11.5,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: context.palette.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'Aparece primero y consigue más clientes',
+                  style: TextStyle(
+                    fontSize: 12,
                     color: context.palette.textSecondary,
                   ),
                 ),
@@ -544,15 +555,333 @@ class BoostPromo extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          FilledButton(
+          ElevatedButton(
             onPressed: onActivate,
-            style: FilledButton.styleFrom(
+            style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.purple,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(18),
               ),
             ),
-            child: const Text('Activar'),
+            child: const Text(
+              'Activar',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Segmented tab switcher between "Mi Perfil" and "Mi Negocio".
+class ProfileSegmentedTabs extends StatelessWidget {
+  const ProfileSegmentedTabs({
+    super.key,
+    required this.selectedIndex,
+    required this.onChanged,
+  });
+
+  final int selectedIndex;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(5),
+      decoration: BoxDecoration(
+        color: context.palette.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.palette.border),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _TabButton(
+              icon: Icons.person,
+              label: 'Mi Perfil',
+              isSelected: selectedIndex == 0,
+              onTap: () => onChanged(0),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: _TabButton(
+              icon: Icons.storefront_outlined,
+              label: 'Mi Negocio',
+              isSelected: selectedIndex == 1,
+              onTap: () => onChanged(1),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TabButton extends StatelessWidget {
+  const _TabButton({
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final activeBg = context.palette.page;
+    final activeFg = context.palette.textPrimary;
+    final inactiveFg = context.palette.textSecondary;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
+      decoration: BoxDecoration(
+        color: isSelected ? activeBg : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: isSelected
+            ? [
+                BoxShadow(
+                  color: context.palette.shadow,
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 18,
+                  color: isSelected ? AppColors.purple : inactiveFg,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                    color: isSelected ? activeFg : inactiveFg,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Highlighted business card in "Mi Negocio" showing status and quick actions.
+class OwnedBusinessDetailCard extends StatelessWidget {
+  const OwnedBusinessDetailCard({
+    super.key,
+    required this.business,
+    required this.onEdit,
+    required this.onView,
+  });
+
+  final ProfileBusiness business;
+  final VoidCallback onEdit;
+  final VoidCallback onView;
+
+  @override
+  Widget build(BuildContext context) {
+    final isActive = business.isActive;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.palette.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: context.palette.border),
+        boxShadow: [
+          BoxShadow(
+            color: context.palette.shadow,
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          BusinessThumbnail(
+            imageUrl: business.imageUrl,
+            width: 68,
+            height: 68,
+            borderRadius: 16,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        business.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          color: context.palette.textPrimary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    _ActiveStatusPill(isActive: isActive),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.location_on,
+                      color: AppColors.offerRed,
+                      size: 15,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        business.address.isNotEmpty
+                            ? business.address
+                            : 'Sin dirección especificada',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: context.palette.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    InkWell(
+                      onTap: onEdit,
+                      borderRadius: BorderRadius.circular(6),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 2),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.edit_note_outlined,
+                              size: 18,
+                              color: AppColors.purple,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'Editar info',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.purple,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 18),
+                    InkWell(
+                      onTap: onView,
+                      borderRadius: BorderRadius.circular(6),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 2),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.visibility_outlined,
+                              size: 16,
+                              color: Color(0xFF00E676),
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'Ver perfil',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF00E676),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActiveStatusPill extends StatelessWidget {
+  const _ActiveStatusPill({required this.isActive});
+
+  final bool isActive;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isActive
+        ? const Color(0xFF00E676)
+        : context.palette.textMuted;
+    final bg = isActive
+        ? const Color(0xFF00E676).withValues(alpha: 0.14)
+        : context.palette.mutedFill;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            isActive ? 'Activa' : 'Inactiva',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
           ),
         ],
       ),
@@ -592,7 +921,7 @@ class BusinessThumbnail extends StatelessWidget {
             width: width,
             height: height,
             fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => placeholder,
+            errorBuilder: (context, error, stackTrace) => placeholder,
           );
 
     return ClipRRect(

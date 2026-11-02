@@ -68,7 +68,7 @@ class _ContactSupportViewState extends State<_ContactSupportView> {
               context,
               'Recibimos tu mensaje. Te responderemos pronto.',
             );
-            Navigator.of(context).pop();
+            Navigator.of(context).pop(true);
           } else {
             showSettingsSnackBar(context, state.error!);
           }

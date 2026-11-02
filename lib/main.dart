@@ -38,6 +38,10 @@ import 'features/market/presentation/pages/market_home_page.dart';
 import 'features/offers/data/datasources/remote/offer_remote_data_source.dart';
 import 'features/offers/data/repositories/offer_repository_impl.dart';
 import 'features/offers/domain/repositories/offer_repository.dart';
+import 'features/plans/data/datasources/remote/plans_remote_data_source.dart';
+import 'features/plans/data/repositories/plans_repository_impl.dart';
+import 'features/plans/domain/repositories/plans_repository.dart';
+import 'features/plans/presentation/pages/boost_business_page.dart';
 import 'features/profile/data/datasources/remote/profile_remote_data_source.dart';
 import 'features/profile/data/repositories/profile_repository_impl.dart';
 import 'features/profile/domain/repositories/profile_repository.dart';
@@ -124,6 +128,10 @@ _AppDependencies _buildDependencies(SupabaseClient supabase) {
     remoteDataSource: SettingsRemoteDataSource(supabase),
   );
 
+  final plansRepository = PlansRepositoryImpl(
+    remoteDataSource: PlansRemoteDataSource(supabase),
+  );
+
   return _AppDependencies(
     authRepository: authRepository,
     businessRepository: businessRepository,
@@ -135,6 +143,7 @@ _AppDependencies _buildDependencies(SupabaseClient supabase) {
     businessRegistrationRepository: businessRegistrationRepository,
     favoritesRepository: favoritesRepository,
     settingsRepository: settingsRepository,
+    plansRepository: plansRepository,
   );
 }
 
@@ -150,6 +159,7 @@ class _AppDependencies {
     required this.businessRegistrationRepository,
     required this.favoritesRepository,
     required this.settingsRepository,
+    required this.plansRepository,
   });
 
   final AuthRepository authRepository;
@@ -162,6 +172,7 @@ class _AppDependencies {
   final BusinessRegistrationRepository businessRegistrationRepository;
   final FavoritesRepository favoritesRepository;
   final SettingsRepository settingsRepository;
+  final PlansRepository plansRepository;
 }
 
 class _AppRoot extends StatelessWidget {
@@ -205,6 +216,9 @@ class _AppRoot extends StatelessWidget {
         ),
         RepositoryProvider<SettingsRepository>.value(
           value: dependencies.settingsRepository,
+        ),
+        RepositoryProvider<PlansRepository>.value(
+          value: dependencies.plansRepository,
         ),
       ],
       // Bypass temporal del Login para probar la nueva pestaña directamente
@@ -292,6 +306,12 @@ class _AppRoot extends StatelessWidget {
                 MarketHomePage.routeName: (_) => const MarketHomePage(),
                 LoginPage.routeName: (_) => const LoginPage(),
                 SignupPage.routeName: (_) => const SignupPage(),
+                BoostBusinessPage.routeName: (context) {
+                  final args = ModalRoute.of(context)?.settings.arguments;
+                  return BoostBusinessPage(
+                    initialBusinessId: args is String ? args : null,
+                  );
+                },
               },
             ),
           ),
