@@ -1,67 +1,248 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_palette.dart';
+import '../../../business_register/domain/entities/business_registration_failure.dart';
+import '../../../business_register/domain/entities/catalog_item_draft.dart';
+import '../../../business_register/domain/repositories/business_registration_repository.dart';
+import '../../../business_register/domain/usecases/delete_business_use_case.dart';
+import '../../../business_register/presentation/pages/catalog_list_page.dart';
+import '../../../business_register/presentation/pages/edit_business_page.dart';
+import '../../../business_register/presentation/pages/manage_offers_page.dart';
 import '../../domain/entities/profile_business.dart';
+import '../../domain/repositories/profile_repository.dart';
 import '../widgets/profile_widgets.dart';
 
 /// Owner-facing dashboard for a single business (design `img_2.png`).
 ///
 /// The header, "Tu rendimiento" views/followers and status reflect real data
-/// from the selected business. Catalog management actions navigate to their
-/// dedicated flows (wired as they are built).
-class BusinessManagementPage extends StatelessWidget {
+/// from the selected business. Every action opens its own flow: one edit
+/// screen per business section, product/service lists and the offer list.
+///
+/// Pops `true` when the business was edited or deleted so the caller can
+/// reload its list.
+class BusinessManagementPage extends StatefulWidget {
   const BusinessManagementPage({super.key, required this.business});
 
   final ProfileBusiness business;
 
-  void _comingSoon(BuildContext context, String feature) {
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(
-        SnackBar(content: Text('$feature estará disponible pronto')),
-      );
+  @override
+  State<BusinessManagementPage> createState() => _BusinessManagementPageState();
+}
+
+class _BusinessManagementPageState extends State<BusinessManagementPage> {
+  late ProfileBusiness _business = widget.business;
+  bool _changed = false;
+  bool _deleting = false;
+
+  /// Opens a catalog screen; on return the stats (active offers) and cover
+  /// may have changed, so the header is refreshed.
+  Future<void> _openCatalog(Widget page, String routeName) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        settings: RouteSettings(name: routeName),
+        builder: (_) => page,
+      ),
+    );
+    if (!mounted) return;
+    _changed = true;
+    await _refreshHeader();
+  }
+
+  void _openItems(CatalogItemKind kind, {bool add = false}) => _openCatalog(
+    CatalogListPage(businessId: _business.id, kind: kind, openAddOnStart: add),
+    CatalogListPage.routeName,
+  );
+
+  void _openOffers({bool create = false}) => _openCatalog(
+    ManageOffersPage(businessId: _business.id, openCreateOnStart: create),
+    ManageOffersPage.routeName,
+  );
+
+  Future<void> _openEdit([
+    EditBusinessSection section = EditBusinessSection.info,
+  ]) async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        settings: const RouteSettings(name: EditBusinessPage.routeName),
+        builder: (_) =>
+            EditBusinessPage(businessId: _business.id, section: section),
+      ),
+    );
+    if (saved != true || !mounted) return;
+    _changed = true;
+    await _refreshHeader();
+  }
+
+  /// Re-reads the owned business so the header shows the edited name/address.
+  Future<void> _refreshHeader() async {
+    try {
+      final overview = await context.read<ProfileRepository>().loadOverview();
+      final updated = overview.owned.where((b) => b.id == _business.id);
+      if (mounted && updated.isNotEmpty) {
+        setState(() => _business = updated.first);
+      }
+    } catch (_) {
+      // The edit is already saved; a stale header is harmless and the
+      // profile list reloads when this page closes.
+    }
+  }
+
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('¿Eliminar negocio?'),
+        content: Text(
+          '"${_business.name}" dejará de aparecer en la app junto con sus '
+          'productos, servicios y ofertas. Esta acción no se puede deshacer.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) await _delete();
+  }
+
+  Future<void> _delete() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    final deleteBusiness = DeleteBusinessUseCase(
+      context.read<BusinessRegistrationRepository>(),
+    );
+    setState(() => _deleting = true);
+    try {
+      await deleteBusiness(_business.id);
+      messenger
+        ..clearSnackBars()
+        ..showSnackBar(const SnackBar(content: Text('Negocio eliminado')));
+      navigator.pop(true);
+    } catch (error) {
+      debugPrint('deleteBusiness failed: $error');
+      if (!mounted) return;
+      setState(() => _deleting = false);
+      messenger
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              error is BusinessRegistrationFailure
+                  ? error.message
+                  : 'No se pudo eliminar el negocio',
+            ),
+          ),
+        );
+    }
+  }
+
+  void _onManage(String label) {
+    switch (label) {
+      case _ManageList.offers:
+        _openOffers();
+      case _ManageList.products:
+        _openItems(CatalogItemKind.product);
+      case _ManageList.services:
+        _openItems(CatalogItemKind.service);
+      case _ManageList.photos:
+        _openEdit(EditBusinessSection.photos);
+      case _ManageList.schedule:
+        _openEdit(EditBusinessSection.schedule);
+      case _ManageList.social:
+        _openEdit(EditBusinessSection.social);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.palette.page,
-      appBar: AppBar(
+    final business = _business;
+    return PopScope<bool>(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && !_deleting) Navigator.of(context).pop(_changed);
+      },
+      child: Scaffold(
         backgroundColor: context.palette.page,
-        elevation: 0,
-        foregroundColor: context.palette.textPrimary,
+        appBar: AppBar(
+          backgroundColor: context.palette.page,
+          elevation: 0,
+          foregroundColor: context.palette.textPrimary,
+        ),
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+          children: [
+            _Header(business: business, onEdit: _openEdit),
+            const SizedBox(height: 18),
+            BoostPromo(
+              onActivate: () => Navigator.of(
+                context,
+              ).pushNamed('/boost-business', arguments: business.id),
+            ),
+            const SizedBox(height: 24),
+            const _SectionTitle('Tu rendimiento'),
+            const SizedBox(height: 12),
+            _Performance(business: business),
+            const SizedBox(height: 24),
+            const _SectionTitle('Acciones rápidas'),
+            const SizedBox(height: 12),
+            _QuickActions(
+              onCreateOffer: () => _openOffers(create: true),
+              onAddProduct: () =>
+                  _openItems(CatalogItemKind.product, add: true),
+              onAddService: () =>
+                  _openItems(CatalogItemKind.service, add: true),
+            ),
+            const SizedBox(height: 24),
+            const _SectionTitle('Administrar negocio'),
+            const SizedBox(height: 12),
+            _ManageList(onTap: _onManage),
+            const SizedBox(height: 14),
+            _DeleteButton(isLoading: _deleting, onPressed: _confirmDelete),
+          ],
+        ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
-        children: [
-          _Header(
-            business: business,
-            onEdit: () => _comingSoon(context, 'Editar información'),
-          ),
-          const SizedBox(height: 18),
-          BoostPromo(
-            onActivate: () => Navigator.of(
-              context,
-            ).pushNamed('/boost-business', arguments: business.id),
-          ),
-          const SizedBox(height: 24),
-          const _SectionTitle('Tu rendimiento'),
-          const SizedBox(height: 12),
-          _Performance(business: business),
-          const SizedBox(height: 24),
-          const _SectionTitle('Acciones rápidas'),
-          const SizedBox(height: 12),
-          _QuickActions(
-            onCreateOffer: () => _comingSoon(context, 'Crear oferta'),
-            onAddProduct: () => _comingSoon(context, 'Agregar producto'),
-            onAddService: () => _comingSoon(context, 'Agregar servicio'),
-          ),
-          const SizedBox(height: 24),
-          const _SectionTitle('Administrar negocio'),
-          const SizedBox(height: 12),
-          _ManageList(onTap: (label) => _comingSoon(context, label)),
-        ],
+    );
+  }
+}
+
+class _DeleteButton extends StatelessWidget {
+  const _DeleteButton({required this.isLoading, required this.onPressed});
+
+  final bool isLoading;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: isLoading ? null : onPressed,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: Colors.redAccent,
+        side: const BorderSide(color: Colors.redAccent),
+        minimumSize: const Size.fromHeight(50),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+      icon: isLoading
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.redAccent,
+              ),
+            )
+          : const Icon(Icons.delete_outline),
+      label: const Text(
+        'Eliminar negocio',
+        style: TextStyle(fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -165,16 +346,19 @@ class _Performance extends StatelessWidget {
         value: _formatCount(business.followersCount),
         label: 'Favoritos',
       ),
-      const _Stat(
+      _Stat(
         icon: Icons.local_fire_department,
         color: Colors.deepOrange,
-        value: '—',
+        value: _formatCount(business.activeOffersCount),
         label: 'Ofertas activas',
       ),
-      const _Stat(
+      _Stat(
         icon: Icons.star,
         color: AppColors.star,
-        value: '—',
+        value: business.rating == null
+            ? '—'
+            : '${business.rating!.toStringAsFixed(1)} '
+                  '(${business.reviewsCount})',
         label: 'Calificación',
       ),
     ];
@@ -336,13 +520,20 @@ class _ManageList extends StatelessWidget {
 
   final ValueChanged<String> onTap;
 
+  static const String offers = 'Ofertas activas';
+  static const String products = 'Productos';
+  static const String services = 'Servicios';
+  static const String photos = 'Fotos del negocio';
+  static const String schedule = 'Horario';
+  static const String social = 'Redes sociales y página web';
+
   static const List<_ManageEntry> _entries = [
-    _ManageEntry(Icons.local_fire_department, 'Ofertas activas'),
-    _ManageEntry(Icons.inventory_2_outlined, 'Productos'),
-    _ManageEntry(Icons.room_service_outlined, 'Servicios'),
-    _ManageEntry(Icons.photo_library_outlined, 'Fotos del negocio'),
-    _ManageEntry(Icons.access_time, 'Horario'),
-    _ManageEntry(Icons.public, 'Redes sociales y página web'),
+    _ManageEntry(Icons.local_fire_department, offers),
+    _ManageEntry(Icons.inventory_2_outlined, products),
+    _ManageEntry(Icons.room_service_outlined, services),
+    _ManageEntry(Icons.photo_library_outlined, photos),
+    _ManageEntry(Icons.access_time, schedule),
+    _ManageEntry(Icons.public, social),
   ];
 
   @override

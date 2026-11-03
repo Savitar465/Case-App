@@ -2,19 +2,13 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:latlong2/latlong.dart';
 
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_palette.dart';
-import '../../../../core/widgets/static_location_map.dart';
-import '../../../market/domain/entities/category.dart';
 import '../../domain/entities/catalog_item_draft.dart';
 import '../../domain/repositories/business_registration_repository.dart';
 import '../bloc/business_register_cubit.dart';
+import '../widgets/business_form_widgets.dart';
 import '../widgets/register_widgets.dart';
 import 'catalog_item_form_page.dart';
 
@@ -271,7 +265,7 @@ class _CategoryStep extends StatelessWidget {
                 childAspectRatio: 1.05,
                 children: [
                   for (final category in state.categories)
-                    _CategoryCard(
+                    CategoryCard(
                       category: category,
                       selected: state.draft.category?.id == category.id,
                       onTap: () => cubit.selectCategory(category),
@@ -285,194 +279,16 @@ class _CategoryStep extends StatelessWidget {
   }
 }
 
-class _CategoryCard extends StatelessWidget {
-  const _CategoryCard({
-    required this.category,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final MarketCategory category;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = selected ? AppColors.purple : context.palette.textPrimary;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: selected
-              ? context.palette.purpleSurface
-              : context.palette.mutedFill,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: selected ? AppColors.purple : context.palette.neutralBorder,
-            width: selected ? 2 : 1,
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(_iconFor(category.icon), color: color, size: 40),
-            const SizedBox(height: 14),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                category.nameEs,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  IconData _iconFor(String? iconHex) {
-    if (iconHex == null || iconHex.isEmpty) return Icons.storefront;
-    try {
-      final clean = iconHex.startsWith('0x') ? iconHex.substring(2) : iconHex;
-      // Code point is parsed at runtime, so it can't be const.
-      // ignore: non_const_argument_for_const_parameter
-      return IconData(int.parse(clean, radix: 16), fontFamily: 'MaterialIcons');
-    } catch (_) {
-      return Icons.storefront;
-    }
-  }
-}
-
 // ── Step 3: location ───────────────────────────────────────────────────────
-class _LocationStep extends StatefulWidget {
+class _LocationStep extends StatelessWidget {
   const _LocationStep({required this.controller});
 
   final TextEditingController controller;
 
   @override
-  State<_LocationStep> createState() => _LocationStepState();
-}
-
-class _LocationStepState extends State<_LocationStep> {
-  /// Fallback camera target when no point is chosen yet: Santa Cruz de la
-  /// Sierra, Bolivia (matches the default +591 country code).
-  static const LatLng _fallbackCenter = LatLng(-17.7834, -63.1821);
-
-  final MapController _mapController = MapController();
-  bool _locating = false;
-
-  @override
-  void dispose() {
-    _mapController.dispose();
-    super.dispose();
-  }
-
-  /// Persists a chosen coordinate and reverse-geocodes it into the address
-  /// field so the user sees a human-readable location.
-  Future<void> _selectPoint(LatLng point, {bool recenter = false}) async {
-    final cubit = context.read<BusinessRegisterCubit>();
-    cubit.setLocation(point.latitude, point.longitude);
-    if (recenter) _mapController.move(point, 16);
-
-    try {
-      final placemarks = await placemarkFromCoordinates(
-        point.latitude,
-        point.longitude,
-      );
-      if (!mounted || placemarks.isEmpty) return;
-      final address = _formatPlacemark(placemarks.first);
-      if (address.isEmpty) return;
-      widget.controller.text = address;
-      cubit.setAddress(address);
-    } catch (_) {
-      // Reverse geocoding is best-effort; the pin is already saved.
-    }
-  }
-
-  Future<void> _useCurrentLocation() async {
-    if (_locating) return;
-    setState(() => _locating = true);
-    try {
-      if (!await Geolocator.isLocationServiceEnabled()) {
-        _showMessage('Activa la ubicación del dispositivo para continuar.');
-        return;
-      }
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        _showMessage('Necesitamos permiso de ubicación para localizarte.');
-        return;
-      }
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
-      );
-      if (!mounted) return;
-      await _selectPoint(
-        LatLng(position.latitude, position.longitude),
-        recenter: true,
-      );
-    } catch (_) {
-      _showMessage('No pudimos obtener tu ubicación. Inténtalo de nuevo.');
-    } finally {
-      if (mounted) setState(() => _locating = false);
-    }
-  }
-
-  Future<void> _searchAddress(String query) async {
-    final trimmed = query.trim();
-    if (trimmed.isEmpty) return;
-    try {
-      final results = await locationFromAddress(trimmed);
-      if (!mounted || results.isEmpty) {
-        if (mounted) _showMessage('No encontramos esa dirección.');
-        return;
-      }
-      final match = results.first;
-      final point = LatLng(match.latitude, match.longitude);
-      context.read<BusinessRegisterCubit>().setLocation(
-        point.latitude,
-        point.longitude,
-      );
-      _mapController.move(point, 16);
-    } catch (_) {
-      if (mounted) _showMessage('No encontramos esa dirección.');
-    }
-  }
-
-  String _formatPlacemark(Placemark p) {
-    final parts = <String?>[
-      p.street,
-      p.subLocality,
-      p.locality,
-    ].where((part) => part != null && part.trim().isNotEmpty).cast<String>();
-    return parts.join(', ');
-  }
-
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  @override
   Widget build(BuildContext context) {
     final cubit = context.read<BusinessRegisterCubit>();
     final draft = context.watch<BusinessRegisterCubit>().state.draft;
-    final point = (draft.latitude != null && draft.longitude != null)
-        ? LatLng(draft.latitude!, draft.longitude!)
-        : null;
-
     return ListView(
       children: [
         const StepTitle('¿Dónde está tu negocio?'),
@@ -481,75 +297,12 @@ class _LocationStepState extends State<_LocationStep> {
           'Busca tu dirección o toca el mapa para colocar el pin donde estás.',
         ),
         const SizedBox(height: 16),
-        WizardTextField(
-          controller: widget.controller,
-          hintText: 'Buscar dirección o zona',
-          prefixIcon: Icon(Icons.search, color: context.palette.textTertiary),
-          textInputAction: TextInputAction.search,
-          onChanged: cubit.setAddress,
-          onSubmitted: _searchAddress,
-        ),
-        const SizedBox(height: 16),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: SizedBox(
-            height: 240,
-            child: FlutterMap(
-              mapController: _mapController,
-              options: MapOptions(
-                initialCenter: point ?? _fallbackCenter,
-                initialZoom: point != null ? 16 : 12,
-                onTap: (_, tapped) => _selectPoint(tapped),
-              ),
-              children: [
-                TileLayer(
-                  urlTemplate: kOsmTileUrl,
-                  userAgentPackageName: kMapUserAgent,
-                ),
-                if (point != null)
-                  MarkerLayer(
-                    markers: [
-                      Marker(
-                        point: point,
-                        width: 44,
-                        height: 44,
-                        alignment: Alignment.topCenter,
-                        child: const Icon(
-                          Icons.location_on,
-                          color: Colors.red,
-                          size: 44,
-                        ),
-                      ),
-                    ],
-                  ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        OutlinedButton.icon(
-          onPressed: _locating ? null : _useCurrentLocation,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: context.palette.textSecondary,
-            side: BorderSide(color: context.palette.neutralBorder),
-            minimumSize: const Size.fromHeight(48),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
-            ),
-          ),
-          icon: _locating
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AppColors.purple,
-                  ),
-                )
-              : const Icon(Icons.my_location, color: AppColors.purple),
-          label: Text(
-            _locating ? 'Obteniendo ubicación…' : 'Usar mi ubicación actual',
-          ),
+        BusinessLocationPicker(
+          addressController: controller,
+          latitude: draft.latitude,
+          longitude: draft.longitude,
+          onAddressChanged: cubit.setAddress,
+          onLocationChanged: cubit.setLocation,
         ),
       ],
     );
@@ -583,7 +336,7 @@ class _ContactStep extends StatelessWidget {
         const SizedBox(height: 16),
         Row(
           children: [
-            _socialBadge(const Color(0xFF25D366), Icons.chat),
+            const SocialBadge(color: Color(0xFF25D366), icon: Icons.chat),
             const SizedBox(width: 10),
             const Text(
               'WhatsApp',
@@ -594,17 +347,7 @@ class _ContactStep extends StatelessWidget {
         const SizedBox(height: 10),
         Row(
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: context.palette.border),
-              ),
-              child: const Text(
-                '+591',
-                style: TextStyle(fontWeight: FontWeight.w800),
-              ),
-            ),
+            const CountryCodeBox(code: '+591'),
             const SizedBox(width: 10),
             Expanded(
               child: WizardTextField(
@@ -621,83 +364,43 @@ class _ContactStep extends StatelessWidget {
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 16),
-        _SocialField(
+        SocialField(
           label: 'TikTok',
-          badge: _socialBadge(const Color(0xFF111111), Icons.music_note),
+          badge: const SocialBadge(
+            color: Color(0xFF111111),
+            icon: Icons.music_note,
+          ),
           controller: tiktok,
           onChanged: cubit.setTiktok,
         ),
-        _SocialField(
+        SocialField(
           label: 'Facebook',
-          badge: _socialBadge(const Color(0xFF1877F2), Icons.facebook),
+          badge: const SocialBadge(
+            color: Color(0xFF1877F2),
+            icon: Icons.facebook,
+          ),
           controller: facebook,
           onChanged: cubit.setFacebook,
         ),
-        _SocialField(
+        SocialField(
           label: 'Instagram',
-          badge: _socialBadge(const Color(0xFFE1306C), Icons.camera_alt),
+          badge: const SocialBadge(
+            color: Color(0xFFE1306C),
+            icon: Icons.camera_alt,
+          ),
           controller: instagram,
           onChanged: cubit.setInstagram,
         ),
-        _SocialField(
+        SocialField(
           label: 'Página web',
-          badge: _socialBadge(const Color(0xFF1A73E8), Icons.public),
+          badge: const SocialBadge(
+            color: Color(0xFF1A73E8),
+            icon: Icons.public,
+          ),
           controller: website,
           onChanged: cubit.setWebsite,
         ),
       ],
-    );
-  }
-
-  Widget _socialBadge(Color color, IconData icon) {
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Icon(icon, color: Colors.white, size: 26),
-    );
-  }
-}
-
-class _SocialField extends StatelessWidget {
-  const _SocialField({
-    required this.label,
-    required this.badge,
-    required this.controller,
-    required this.onChanged,
-  });
-
-  final String label;
-  final Widget badge;
-  final TextEditingController controller;
-  final ValueChanged<String> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 16)),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              badge,
-              const SizedBox(width: 12),
-              Expanded(
-                child: WizardTextField(
-                  controller: controller,
-                  onChanged: onChanged,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }
@@ -717,137 +420,15 @@ class _ScheduleStep extends StatelessWidget {
             const StepTitle('Horario de atención'),
             const SizedBox(height: 20),
             for (var i = 0; i < schedule.length; i++) ...[
-              _DayCard(
-                index: i,
+              DayScheduleCard(
                 day: schedule[i],
-                onToggle: (v) => cubit.toggleDay(i, v),
-                onOpen: (v) => cubit.setDayOpen(i, v),
-                onClose: (v) => cubit.setDayClose(i, v),
+                onChanged: (day) => cubit.setDay(i, day),
               ),
               const SizedBox(height: 12),
             ],
           ],
         );
       },
-    );
-  }
-}
-
-class _DayCard extends StatelessWidget {
-  const _DayCard({
-    required this.index,
-    required this.day,
-    required this.onToggle,
-    required this.onOpen,
-    required this.onClose,
-  });
-
-  final int index;
-  final dynamic day; // DaySchedule
-  final ValueChanged<bool> onToggle;
-  final ValueChanged<String> onOpen;
-  final ValueChanged<String> onClose;
-
-  Future<void> _pickTime(
-    BuildContext context,
-    String current,
-    ValueChanged<String> onPicked,
-  ) async {
-    final parts = current.split(':');
-    final initial = TimeOfDay(
-      hour: int.tryParse(parts.first) ?? 8,
-      minute: parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0,
-    );
-    final picked = await showTimePicker(context: context, initialTime: initial);
-    if (picked != null) {
-      onPicked('${picked.hour}:${picked.minute.toString().padLeft(2, '0')}');
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isOpen = day.isOpen as bool;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.palette.faint),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  day.label as String,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-              Text(
-                isOpen ? 'Abierto' : 'Cerrado',
-                style: TextStyle(
-                  color: isOpen
-                      ? Color(0xFF22C55E)
-                      : context.palette.textTertiary,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 18,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Switch(
-                value: isOpen,
-                activeThumbColor: Colors.white,
-                activeTrackColor: const Color(0xFF3B7A2A),
-                onChanged: onToggle,
-              ),
-            ],
-          ),
-          if (isOpen) ...[
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                _TimeText(
-                  value: day.open as String,
-                  onTap: () => _pickTime(context, day.open as String, onOpen),
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 10),
-                  child: Text('-', style: TextStyle(fontSize: 22)),
-                ),
-                _TimeText(
-                  value: day.close as String,
-                  onTap: () => _pickTime(context, day.close as String, onClose),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _TimeText extends StatelessWidget {
-  const _TimeText({required this.value, required this.onTap});
-
-  final String value;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Text(
-        value,
-        style: TextStyle(
-          fontSize: 22,
-          color: context.palette.textSecondary,
-          decoration: TextDecoration.underline,
-        ),
-      ),
     );
   }
 }

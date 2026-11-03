@@ -23,6 +23,8 @@ class ItemRemoteDataSource {
                   .from(_table)
                   .select()
                   .eq('business_id', businessId)
+                  // Items paused by the owner are hidden from customers.
+                  .eq('is_active', true)
                   .order('created_at', ascending: false)
               as List<dynamic>;
       final items = rows.whereType<Map<String, dynamic>>().toList();

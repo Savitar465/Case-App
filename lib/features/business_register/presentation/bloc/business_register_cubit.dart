@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 
 import '../../../market/domain/entities/category.dart';
 import '../../domain/entities/business_draft.dart';
+import '../../domain/entities/business_registration_failure.dart';
 import '../../domain/entities/catalog_item_draft.dart';
 import '../../domain/entities/day_schedule.dart';
 import '../../domain/repositories/business_registration_repository.dart';
@@ -57,18 +58,9 @@ class BusinessRegisterCubit extends Cubit<BusinessRegisterState> {
   void setWebsite(String value) =>
       emit(state.copyWith(draft: state.draft.copyWith(website: value)));
 
-  void toggleDay(int index, bool isOpen) =>
-      _updateDay(index, (day) => day.copyWith(isOpen: isOpen));
-
-  void setDayOpen(int index, String value) =>
-      _updateDay(index, (day) => day.copyWith(open: value));
-
-  void setDayClose(int index, String value) =>
-      _updateDay(index, (day) => day.copyWith(close: value));
-
-  void _updateDay(int index, DaySchedule Function(DaySchedule) transform) {
+  void setDay(int index, DaySchedule day) {
     final schedule = [...state.draft.schedule];
-    schedule[index] = transform(schedule[index]);
+    schedule[index] = day;
     emit(state.copyWith(draft: state.draft.copyWith(schedule: schedule)));
   }
 
@@ -128,7 +120,9 @@ class BusinessRegisterCubit extends Cubit<BusinessRegisterState> {
         draft.address.trim().isNotEmpty ||
             (draft.latitude != null && draft.longitude != null),
       RegisterStep.contact => draft.whatsapp.trim().isNotEmpty,
-      RegisterStep.schedule => true,
+      RegisterStep.schedule => draft.schedule.every(
+        (day) => day.validationError == null,
+      ),
       RegisterStep.photos => true,
       RegisterStep.catalog => true,
     };
@@ -150,6 +144,10 @@ class BusinessRegisterCubit extends Cubit<BusinessRegisterState> {
     try {
       final id = await _repository.publish(state.draft);
       emit(state.copyWith(status: RegisterStatus.success, publishedId: id));
+    } on BusinessRegistrationFailure catch (failure) {
+      emit(
+        state.copyWith(status: RegisterStatus.failure, error: failure.message),
+      );
     } catch (error) {
       emit(
         state.copyWith(status: RegisterStatus.failure, error: error.toString()),

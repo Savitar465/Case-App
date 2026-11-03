@@ -8,12 +8,15 @@ import 'day_schedule.dart';
 class BusinessDraft extends Equatable {
   BusinessDraft({
     this.name = '',
+    this.description = '',
     this.category,
     this.address = '',
     this.latitude,
     this.longitude,
     this.whatsappCountryCode = '+591',
     this.whatsapp = '',
+    this.phone = '',
+    this.email = '',
     this.tiktok = '',
     this.facebook = '',
     this.instagram = '',
@@ -25,12 +28,15 @@ class BusinessDraft extends Equatable {
   }) : schedule = schedule ?? DaySchedule.defaultWeek();
 
   final String name;
+  final String description;
   final MarketCategory? category;
   final String address;
   final double? latitude;
   final double? longitude;
   final String whatsappCountryCode;
   final String whatsapp;
+  final String phone;
+  final String email;
   final String tiktok;
   final String facebook;
   final String instagram;
@@ -45,12 +51,15 @@ class BusinessDraft extends Equatable {
 
   BusinessDraft copyWith({
     String? name,
+    String? description,
     MarketCategory? category,
     String? address,
     double? latitude,
     double? longitude,
     String? whatsappCountryCode,
     String? whatsapp,
+    String? phone,
+    String? email,
     String? tiktok,
     String? facebook,
     String? instagram,
@@ -62,12 +71,15 @@ class BusinessDraft extends Equatable {
   }) {
     return BusinessDraft(
       name: name ?? this.name,
+      description: description ?? this.description,
       category: category ?? this.category,
       address: address ?? this.address,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       whatsappCountryCode: whatsappCountryCode ?? this.whatsappCountryCode,
       whatsapp: whatsapp ?? this.whatsapp,
+      phone: phone ?? this.phone,
+      email: email ?? this.email,
       tiktok: tiktok ?? this.tiktok,
       facebook: facebook ?? this.facebook,
       instagram: instagram ?? this.instagram,
@@ -82,12 +94,15 @@ class BusinessDraft extends Equatable {
   @override
   List<Object?> get props => [
     name,
+    description,
     category,
     address,
     latitude,
     longitude,
     whatsappCountryCode,
     whatsapp,
+    phone,
+    email,
     tiktok,
     facebook,
     instagram,

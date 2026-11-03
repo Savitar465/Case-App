@@ -60,6 +60,7 @@ class CatalogItemDraft extends Equatable {
     this.quantity,
     this.description,
     this.photoPath,
+    this.clearPhoto = false,
   });
 
   final String id;
@@ -79,6 +80,9 @@ class CatalogItemDraft extends Equatable {
   /// Local path of the picked photo, if any.
   final String? photoPath;
 
+  /// Edit only: the owner removed the stored photo without picking another.
+  final bool clearPhoto;
+
   @override
   List<Object?> get props => [
     id,
@@ -90,5 +94,6 @@ class CatalogItemDraft extends Equatable {
     quantity,
     description,
     photoPath,
+    clearPhoto,
   ];
 }

@@ -126,25 +126,36 @@ class _ProfileViewState extends State<_ProfileView> {
   }
 
   void _openMyBusinesses(BuildContext context) {
-    final owned = context.read<ProfileCubit>().state.overview?.owned ?? [];
+    final cubit = context.read<ProfileCubit>();
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         settings: const RouteSettings(name: MyBusinessesPage.routeName),
-        builder: (_) => MyBusinessesPage(
-          businesses: owned,
-          onOpen: (business) => _openManagement(context, business),
-          onCreate: () => _openRegister(context),
+        // Rebuilds from the cubit so edits/deletes show up after a reload.
+        builder: (_) => BlocProvider<ProfileCubit>.value(
+          value: cubit,
+          child: BlocBuilder<ProfileCubit, ProfileState>(
+            builder: (_, state) => MyBusinessesPage(
+              businesses: state.overview?.owned ?? const [],
+              onOpen: (business) => _openManagement(context, business),
+              onCreate: () => _openRegister(context),
+            ),
+          ),
         ),
       ),
     );
   }
 
-  void _openManagement(BuildContext context, ProfileBusiness business) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
+  Future<void> _openManagement(
+    BuildContext context,
+    ProfileBusiness business,
+  ) async {
+    final cubit = context.read<ProfileCubit>();
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
         builder: (_) => BusinessManagementPage(business: business),
       ),
     );
+    if (changed == true) cubit.load();
   }
 
   Future<void> _openBusinessProfile(
