@@ -74,8 +74,39 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Stream<AuthSession> watchSignIns() => _remoteDataSource.signIns();
 
+  @override
+  Future<void> sendPasswordResetEmail({required String email}) async {
+    try {
+      await _remoteDataSource.sendPasswordResetEmail(email);
+    } catch (error) {
+      throw AuthFailure(_describeLoginError(error));
+    }
+  }
+
+  @override
+  Stream<void> watchPasswordRecovery() =>
+      _remoteDataSource.passwordRecoveries();
+
+  @override
+  Future<void> updatePassword({required String newPassword}) async {
+    try {
+      await _remoteDataSource.updatePassword(newPassword);
+    } catch (error) {
+      throw AuthFailure(_describeLoginError(error));
+    }
+  }
+
   String _describeLoginError(Object error) {
-    if (error is supabase.AuthException) return error.message;
+    if (error is supabase.AuthException) {
+      return switch (error.code) {
+        'same_password' =>
+          'La nueva contraseña debe ser distinta a la anterior',
+        'weak_password' => 'La contraseña es demasiado débil',
+        'over_email_send_rate_limit' =>
+          'Espera unos minutos antes de solicitar otro correo',
+        _ => error.message,
+      };
+    }
     if (error is AuthRemoteException) return error.message;
     if (error is SocketException) return 'No internet connection';
     if (error is TimeoutException) return 'Request timed out';

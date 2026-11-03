@@ -27,7 +27,6 @@ class OffersFeedState extends Equatable {
     this.query = '',
     this.expiry = ExpiryFilter.any,
     this.minDiscount,
-    this.businessIds = const {},
   });
 
   /// Offers ending within this window land in "Terminan pronto".
@@ -45,29 +44,10 @@ class OffersFeedState extends Equatable {
   /// Minimum discount percentage, `null` = any.
   final int? minDiscount;
 
-  /// Selected businesses for the "Negocio" filter, empty = all.
-  final Set<String> businessIds;
-
-  bool get hasFilters =>
-      expiry != ExpiryFilter.any ||
-      minDiscount != null ||
-      businessIds.isNotEmpty;
+  bool get hasFilters => expiry != ExpiryFilter.any || minDiscount != null;
 
   int get activeFilterCount =>
-      (expiry != ExpiryFilter.any ? 1 : 0) +
-      (minDiscount != null ? 1 : 0) +
-      (businessIds.isNotEmpty ? 1 : 0);
-
-  /// Businesses that currently have offers, for the "Negocio" filter.
-  List<({String id, String name})> get businesses {
-    final byId = <String, String>{};
-    for (final offer in offers) {
-      byId[offer.businessId] = offer.businessName;
-    }
-    return [
-      for (final entry in byId.entries) (id: entry.key, name: entry.value),
-    ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-  }
+      (expiry != ExpiryFilter.any ? 1 : 0) + (minDiscount != null ? 1 : 0);
 
   /// Offers available at [now] that pass the search and filters, soonest
   /// ending first.
@@ -81,9 +61,6 @@ class OffersFeedState extends Equatable {
         return false;
       }
       if (min != null && (offer.discountPercent ?? 0) < min) return false;
-      if (businessIds.isNotEmpty && !businessIds.contains(offer.businessId)) {
-        return false;
-      }
       if (needle.isNotEmpty &&
           !offer.title.toLowerCase().contains(needle) &&
           !offer.businessName.toLowerCase().contains(needle) &&
@@ -119,7 +96,6 @@ class OffersFeedState extends Equatable {
     ExpiryFilter? expiry,
     int? minDiscount,
     bool clearMinDiscount = false,
-    Set<String>? businessIds,
   }) {
     return OffersFeedState(
       offers: offers ?? this.offers,
@@ -129,7 +105,6 @@ class OffersFeedState extends Equatable {
       query: query ?? this.query,
       expiry: expiry ?? this.expiry,
       minDiscount: clearMinDiscount ? null : minDiscount ?? this.minDiscount,
-      businessIds: businessIds ?? this.businessIds,
     );
   }
 
@@ -142,6 +117,5 @@ class OffersFeedState extends Equatable {
     query,
     expiry,
     minDiscount,
-    businessIds,
   ];
 }

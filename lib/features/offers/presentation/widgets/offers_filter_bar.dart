@@ -5,14 +5,13 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_palette.dart';
 import '../bloc/offers_feed_cubit.dart';
 
-/// "Filtros | Vencimiento · Descuento · Negocio" chip row.
+/// "Filtros | Vencimiento · Descuento" chip row.
 class OffersFilterBar extends StatelessWidget {
   const OffersFilterBar({super.key});
 
   @override
   Widget build(BuildContext context) {
     final state = context.watch<OffersFeedCubit>().state;
-    final businessCount = state.businessIds.length;
     return SizedBox(
       height: 40,
       child: ListView(
@@ -48,22 +47,6 @@ class OffersFilterBar extends StatelessWidget {
             dropdown: true,
             onTap: () => _openDiscount(context),
           ),
-          const SizedBox(width: 8),
-          _FilterChip(
-            label: businessCount == 0
-                ? 'Negocio'
-                : businessCount == 1
-                ? state.businesses
-                      .firstWhere(
-                        (b) => state.businessIds.contains(b.id),
-                        orElse: () => (id: '', name: '1 negocio'),
-                      )
-                      .name
-                : '$businessCount negocios',
-            selected: businessCount > 0,
-            dropdown: true,
-            onTap: () => _openBusinesses(context),
-          ),
         ],
       ),
     );
@@ -92,21 +75,6 @@ class OffersFilterBar extends StatelessWidget {
       selected: cubit.state.minDiscount,
     );
     if (picked != null) cubit.setMinDiscount(picked.$1);
-  }
-
-  Future<void> _openBusinesses(BuildContext context) async {
-    final cubit = context.read<OffersFeedCubit>();
-    final picked = await showModalBottomSheet<Set<String>>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      backgroundColor: context.palette.surface,
-      builder: (_) => _BusinessPicker(
-        businesses: cubit.state.businesses,
-        initial: cubit.state.businessIds,
-      ),
-    );
-    if (picked != null) cubit.setBusinessIds(picked);
   }
 
   Future<void> _openAllFilters(BuildContext context) async {
@@ -170,82 +138,6 @@ class _SheetTitle extends StatelessWidget {
           fontSize: 18,
           fontWeight: FontWeight.w800,
           color: context.palette.textPrimary,
-        ),
-      ),
-    );
-  }
-}
-
-class _BusinessPicker extends StatefulWidget {
-  const _BusinessPicker({required this.businesses, required this.initial});
-
-  final List<({String id, String name})> businesses;
-  final Set<String> initial;
-
-  @override
-  State<_BusinessPicker> createState() => _BusinessPickerState();
-}
-
-class _BusinessPickerState extends State<_BusinessPicker> {
-  late final Set<String> _selected = {...widget.initial};
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(context).height * 0.7,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const _SheetTitle('Negocio'),
-            Flexible(
-              child: widget.businesses.isEmpty
-                  ? const Padding(
-                      padding: EdgeInsets.all(20),
-                      child: Text('No hay negocios con ofertas activas'),
-                    )
-                  : ListView(
-                      shrinkWrap: true,
-                      children: [
-                        for (final business in widget.businesses)
-                          CheckboxListTile(
-                            value: _selected.contains(business.id),
-                            activeColor: AppColors.purple,
-                            title: Text(business.name),
-                            onChanged: (checked) => setState(() {
-                              if (checked ?? false) {
-                                _selected.add(business.id);
-                              } else {
-                                _selected.remove(business.id);
-                              }
-                            }),
-                          ),
-                      ],
-                    ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-              child: Row(
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(<String>{}),
-                    child: const Text('Limpiar'),
-                  ),
-                  const Spacer(),
-                  FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.purple,
-                    ),
-                    onPressed: () => Navigator.of(context).pop(_selected),
-                    child: const Text('Aplicar'),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ),
       ),
     );
@@ -317,24 +209,6 @@ class _AllFiltersSheet extends StatelessWidget {
                     label: '$p%+',
                     selected: state.minDiscount == p,
                     onTap: () => cubit.setMinDiscount(p),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            const _GroupLabel('Negocio'),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final business in state.businesses)
-                  _FilterChip(
-                    label: business.name,
-                    selected: state.businessIds.contains(business.id),
-                    onTap: () {
-                      final ids = {...state.businessIds};
-                      if (!ids.remove(business.id)) ids.add(business.id);
-                      cubit.setBusinessIds(ids);
-                    },
                   ),
               ],
             ),

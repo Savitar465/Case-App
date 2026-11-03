@@ -69,29 +69,18 @@ class OffersFeedCubit extends Cubit<OffersFeedState> {
     state.copyWith(minDiscount: percent, clearMinDiscount: percent == null),
   );
 
-  void setBusinessIds(Set<String> ids) =>
-      emit(state.copyWith(businessIds: ids));
-
-  void applyFilters({
-    required ExpiryFilter expiry,
-    required int? minDiscount,
-    required Set<String> businessIds,
-  }) {
+  void applyFilters({required ExpiryFilter expiry, required int? minDiscount}) {
     emit(
       state.copyWith(
         expiry: expiry,
         minDiscount: minDiscount,
         clearMinDiscount: minDiscount == null,
-        businessIds: businessIds,
       ),
     );
   }
 
-  void clearFilters() => applyFilters(
-    expiry: ExpiryFilter.any,
-    minDiscount: null,
-    businessIds: const {},
-  );
+  void clearFilters() =>
+      applyFilters(expiry: ExpiryFilter.any, minDiscount: null);
 
   String _describe(Object error) => error is OfferFailure
       ? error.message

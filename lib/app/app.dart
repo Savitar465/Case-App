@@ -7,6 +7,7 @@ import 'package:market_app/features/auth/domain/usecases/logout_use_case.dart';
 import 'package:market_app/features/auth/domain/usecases/restore_session_use_case.dart';
 import 'package:market_app/features/auth/domain/usecases/sign_in_with_google_use_case.dart';
 import 'package:market_app/features/auth/domain/usecases/signup_use_case.dart';
+import 'package:market_app/features/auth/domain/usecases/watch_password_recovery_use_case.dart';
 import 'package:market_app/features/auth/domain/usecases/watch_sign_ins_use_case.dart';
 import 'package:market_app/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:market_app/features/auth/presentation/pages/login_page.dart';
@@ -24,7 +25,10 @@ class App extends StatelessWidget {
       _restoreSessionUseCase = RestoreSessionUseCase(authRepository),
       _signUpUseCase = SignUpUseCase(authRepository),
       _signInWithGoogleUseCase = SignInWithGoogleUseCase(authRepository),
-      _watchSignInsUseCase = WatchSignInsUseCase(authRepository);
+      _watchSignInsUseCase = WatchSignInsUseCase(authRepository),
+      _watchPasswordRecoveryUseCase = WatchPasswordRecoveryUseCase(
+        authRepository,
+      );
 
   final LoginUseCase _loginUseCase;
   final LogoutUseCase _logoutUseCase;
@@ -32,6 +36,7 @@ class App extends StatelessWidget {
   final SignUpUseCase _signUpUseCase;
   final SignInWithGoogleUseCase _signInWithGoogleUseCase;
   final WatchSignInsUseCase _watchSignInsUseCase;
+  final WatchPasswordRecoveryUseCase _watchPasswordRecoveryUseCase;
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +48,7 @@ class App extends StatelessWidget {
         signUpUseCase: _signUpUseCase,
         signInWithGoogleUseCase: _signInWithGoogleUseCase,
         watchSignInsUseCase: _watchSignInsUseCase,
+        watchPasswordRecoveryUseCase: _watchPasswordRecoveryUseCase,
       )..add(const AuthStarted()),
       child: MaterialApp(
         title: AppConstants.appName,
@@ -79,7 +85,10 @@ class _AuthGate extends StatelessWidget {
       builder: (context, state) => switch (state) {
         AuthAuthenticated() => const MarketHomePage(),
         AuthLoading() => const _LoadingScreen(),
-        AuthInitial() || AuthError() || AuthInfo() => const LoginPage(),
+        AuthInitial() ||
+        AuthError() ||
+        AuthInfo() ||
+        AuthPasswordRecovery() => const LoginPage(),
       },
     );
   }

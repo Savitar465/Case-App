@@ -43,3 +43,9 @@ class AuthInfo extends AuthState {
   @override
   List<Object?> get props => [message];
 }
+
+/// Transient: a password-reset link was opened and "Nueva contraseña" should
+/// be shown. Treated like [AuthInitial] for routing purposes.
+class AuthPasswordRecovery extends AuthState {
+  const AuthPasswordRecovery();
+}

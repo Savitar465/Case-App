@@ -6,6 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_palette.dart';
 import '../../../market/presentation/pages/market_home_page.dart';
 import '../widgets/auth_widgets.dart';
+import 'forgot_password_page.dart';
 import 'signup_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -51,12 +52,15 @@ class _LoginPageState extends State<LoginPage> {
     context.read<AuthBloc>().add(const GoogleSignInRequested());
   }
 
-  void _comingSoon(String feature) {
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(
-        SnackBar(content: Text('$feature estará disponible pronto')),
-      );
+  void _goToForgotPassword() {
+    final email = _emailController.text.trim();
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        settings: const RouteSettings(name: ForgotPasswordPage.routeName),
+        builder: (_) =>
+            ForgotPasswordPage(initialEmail: email.isEmpty ? null : email),
+      ),
+    );
   }
 
   @override
@@ -71,9 +75,12 @@ class _LoginPageState extends State<LoginPage> {
               ..showSnackBar(SnackBar(content: Text(state.message)));
           }
           if (state is AuthAuthenticated) {
-            Navigator.of(
-              context,
-            ).pushReplacementNamed(MarketHomePage.routeName);
+            // Clear the whole stack: with pushReplacement the welcome page
+            // stayed underneath, so a back swipe looked like a logout.
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              MarketHomePage.routeName,
+              (route) => false,
+            );
           }
         },
         builder: (context, state) {
@@ -118,9 +125,7 @@ class _LoginPageState extends State<LoginPage> {
                             Align(
                               alignment: Alignment.centerRight,
                               child: TextButton(
-                                onPressed: () => _comingSoon(
-                                  'La recuperación de contraseña',
-                                ),
+                                onPressed: _goToForgotPassword,
                                 style: TextButton.styleFrom(
                                   foregroundColor: AppColors.purple,
                                   padding: EdgeInsets.zero,

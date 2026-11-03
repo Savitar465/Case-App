@@ -11,9 +11,12 @@ import 'features/auth/domain/usecases/logout_use_case.dart';
 import 'features/auth/domain/usecases/restore_session_use_case.dart';
 import 'features/auth/domain/usecases/sign_in_with_google_use_case.dart';
 import 'features/auth/domain/usecases/signup_use_case.dart';
+import 'features/auth/domain/usecases/watch_password_recovery_use_case.dart';
 import 'features/auth/domain/usecases/watch_sign_ins_use_case.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
+import 'features/auth/presentation/pages/forgot_password_page.dart';
 import 'features/auth/presentation/pages/login_page.dart';
+import 'features/auth/presentation/pages/new_password_page.dart';
 import 'features/auth/presentation/pages/signup_page.dart';
 import 'features/business/data/datasources/remote/business_remote_data_source.dart';
 import 'features/business/data/repositories/business_repository_impl.dart';
@@ -183,6 +186,9 @@ class _AppRoot extends StatelessWidget {
   /// Lets app-wide listeners (favorites errors) show snackbars on any route.
   static final _messengerKey = GlobalKey<ScaffoldMessengerState>();
 
+  /// Lets the password-reset deep link open "Nueva contraseña" on any route.
+  static final _navigatorKey = GlobalKey<NavigatorState>();
+
   @override
   Widget build(BuildContext context) {
     return MultiRepositoryProvider(
@@ -241,7 +247,10 @@ class _AppRoot extends StatelessWidget {
               watchSignInsUseCase: WatchSignInsUseCase(
                 dependencies.authRepository,
               ),
-            ),
+              watchPasswordRecoveryUseCase: WatchPasswordRecoveryUseCase(
+                dependencies.authRepository,
+              ),
+            )..add(const AuthStarted()),
           ),
           // Global: hearts on every screen share one favorites state.
           BlocProvider<FavoritesCubit>(
@@ -280,6 +289,12 @@ class _AppRoot extends StatelessWidget {
                 context.read<AppearanceCubit>().load();
               },
             ),
+            BlocListener<AuthBloc, AuthState>(
+              listenWhen: (prev, curr) => curr is AuthPasswordRecovery,
+              listener: (_, _) => _navigatorKey.currentState?.pushNamed(
+                NewPasswordPage.routeName,
+              ),
+            ),
             BlocListener<FavoritesCubit, FavoritesState>(
               listenWhen: (prev, curr) =>
                   curr.error != null && prev.error != curr.error,
@@ -296,16 +311,19 @@ class _AppRoot extends StatelessWidget {
             },
             builder: (context, themeMode) => MaterialApp(
               scaffoldMessengerKey: _messengerKey,
+              navigatorKey: _navigatorKey,
               debugShowCheckedModeBanner: false,
               themeMode: themeMode,
               theme: AppTheme.light,
               darkTheme: AppTheme.dark,
-              home: const WelcomePage(),
+              home: const _StartupGate(),
               routes: {
                 WelcomePage.routeName: (_) => const WelcomePage(),
                 MarketHomePage.routeName: (_) => const MarketHomePage(),
                 LoginPage.routeName: (_) => const LoginPage(),
                 SignupPage.routeName: (_) => const SignupPage(),
+                ForgotPasswordPage.routeName: (_) => const ForgotPasswordPage(),
+                NewPasswordPage.routeName: (_) => const NewPasswordPage(),
                 BoostBusinessPage.routeName: (context) {
                   final args = ModalRoute.of(context)?.settings.arguments;
                   return BoostBusinessPage(
@@ -317,6 +335,25 @@ class _AppRoot extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Picks the first screen from the persisted Supabase session, so a signed-in
+/// user lands on the home page instead of the welcome/login flow.
+class _StartupGate extends StatelessWidget {
+  const _StartupGate();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) => switch (state) {
+        AuthAuthenticated() => const MarketHomePage(),
+        AuthLoading() => const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
+        _ => const WelcomePage(),
+      },
     );
   }
 }

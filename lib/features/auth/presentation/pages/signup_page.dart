@@ -123,9 +123,12 @@ class _SignupPageState extends State<SignupPage> {
             _showConfirmationDialog(state.message);
           }
           if (state is AuthAuthenticated) {
-            Navigator.of(
-              context,
-            ).pushReplacementNamed(MarketHomePage.routeName);
+            // Clear the whole stack: with pushReplacement the welcome page
+            // stayed underneath, so a back swipe looked like a logout.
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              MarketHomePage.routeName,
+              (route) => false,
+            );
           }
         },
         builder: (context, state) {

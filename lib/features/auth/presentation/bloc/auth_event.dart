@@ -48,3 +48,8 @@ class _SignedInExternally extends AuthEvent {
   @override
   List<Object?> get props => [session];
 }
+
+/// Internal: the user opened a password-reset link.
+class _PasswordRecoveryOpened extends AuthEvent {
+  const _PasswordRecoveryOpened();
+}

@@ -9,6 +9,7 @@ import 'package:market_app/features/auth/domain/usecases/logout_use_case.dart';
 import 'package:market_app/features/auth/domain/usecases/restore_session_use_case.dart';
 import 'package:market_app/features/auth/domain/usecases/sign_in_with_google_use_case.dart';
 import 'package:market_app/features/auth/domain/usecases/signup_use_case.dart';
+import 'package:market_app/features/auth/domain/usecases/watch_password_recovery_use_case.dart';
 import 'package:market_app/features/auth/domain/usecases/watch_sign_ins_use_case.dart';
 
 part 'auth_event.dart';
@@ -22,6 +23,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required SignUpUseCase signUpUseCase,
     required SignInWithGoogleUseCase signInWithGoogleUseCase,
     required WatchSignInsUseCase watchSignInsUseCase,
+    required WatchPasswordRecoveryUseCase watchPasswordRecoveryUseCase,
   }) : _loginUseCase = loginUseCase,
        _logoutUseCase = logoutUseCase,
        _restoreSessionUseCase = restoreSessionUseCase,
@@ -34,8 +36,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<LogoutRequested>(_onLogoutRequested);
     on<GoogleSignInRequested>(_onGoogleSignInRequested);
     on<_SignedInExternally>(_onSignedInExternally);
+    on<_PasswordRecoveryOpened>(_onPasswordRecoveryOpened);
     _signInSubscription = watchSignInsUseCase().listen(
       (session) => add(_SignedInExternally(session)),
+      onError: (Object error) => addError(error),
+    );
+    _recoverySubscription = watchPasswordRecoveryUseCase().listen(
+      (_) => add(const _PasswordRecoveryOpened()),
       onError: (Object error) => addError(error),
     );
   }
@@ -50,6 +57,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final SignUpUseCase _signUpUseCase;
   final SignInWithGoogleUseCase _signInWithGoogleUseCase;
   StreamSubscription<AuthSession>? _signInSubscription;
+  StreamSubscription<void>? _recoverySubscription;
 
   /// True between launching the Google browser flow and its redirect, so
   /// password logins (which also fire Supabase sign-in events) are not
@@ -158,9 +166,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthAuthenticated(session: event.session));
   }
 
+  /// The reset link signed the user in for recovery only: surface it so the
+  /// app opens "Nueva contraseña", then return to the signed-out state.
+  void _onPasswordRecoveryOpened(
+    _PasswordRecoveryOpened event,
+    Emitter<AuthState> emit,
+  ) {
+    emit(const AuthPasswordRecovery());
+    emit(const AuthInitial());
+  }
+
   @override
   Future<void> close() async {
     await _signInSubscription?.cancel();
+    await _recoverySubscription?.cancel();
     return super.close();
   }
 

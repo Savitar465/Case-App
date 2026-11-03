@@ -317,3 +317,50 @@ class LabeledDivider extends StatelessWidget {
     );
   }
 }
+
+/// Icon, title and explanation heading the password-reset screens.
+class AuthResetHeader extends StatelessWidget {
+  const AuthResetHeader({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          width: 88,
+          height: 88,
+          decoration: BoxDecoration(
+            color: context.palette.purpleSurface,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, size: 44, color: AppColors.purple),
+        ),
+        const SizedBox(height: 20),
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            color: context.palette.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          subtitle,
+          textAlign: TextAlign.center,
+          style: TextStyle(color: context.palette.textSecondary),
+        ),
+      ],
+    );
+  }
+}
