@@ -62,6 +62,10 @@ class ScheduleStatus {
 /// }
 /// ```
 /// An empty list (or a missing day) means closed that day.
+///
+/// Older wizard rows store a single range per day instead:
+/// `{"monday": {"is_open": true, "open": "8:00", "close": "19:00"}}`; it is
+/// read as a one-interval list (`is_open: false` means closed).
 class BusinessSchedule extends Equatable {
   const BusinessSchedule(this.intervalsByWeekday);
 
@@ -81,7 +85,10 @@ class BusinessSchedule extends Equatable {
   factory BusinessSchedule.fromMap(Map<String, dynamic> map) {
     final result = <int, List<ScheduleInterval>>{};
     _weekdayKeys.forEach((weekday, key) {
-      final raw = map[key];
+      final value = map[key];
+      final raw = value is Map
+          ? (value['is_open'] == false ? const [] : [value])
+          : value;
       final intervals = <ScheduleInterval>[];
       if (raw is List) {
         for (final item in raw) {

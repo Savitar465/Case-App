@@ -28,7 +28,7 @@ class FavoritesRemoteDataSource {
       final follows = await _client
           .from(_followsTable)
           .select(
-            '*, businesses(id, name, address, '
+            '*, businesses(id, name, address, status, '
             'business_images(url, is_cover, display_order))',
           )
           .eq('user_id', userId);
@@ -36,27 +36,29 @@ class FavoritesRemoteDataSource {
           .from(_itemFavoritesTable)
           .select(
             'created_at, items(id, name, type, price, currency, business_id, '
-            'businesses(name), item_images(url, display_order))',
+            'businesses(name, status), item_images(url, display_order))',
           )
           .eq('user_id', userId);
       final offers = await _client
           .from(_offerFavoritesTable)
           .select(
             'created_at, offers(id, title, business_id, image_url, '
-            'businesses(name))',
+            'businesses(name, status))',
           )
           .eq('user_id', userId);
 
+      // Deleted businesses are soft-deleted rows (status = 'deleted'); their
+      // follows and item/offer favorites stay in the tables, so hide them.
       return [
-        ..._rows(
-          follows,
-        ).map((r) => FavoriteEntryModel.fromFollowRow(r, _resolveImageUrl)),
-        ..._rows(
-          items,
-        ).map((r) => FavoriteEntryModel.fromItemRow(r, _resolveImageUrl)),
-        ..._rows(
-          offers,
-        ).map((r) => FavoriteEntryModel.fromOfferRow(r, _resolveImageUrl)),
+        ..._rows(follows)
+            .where((r) => !_isDeleted(r['businesses']))
+            .map((r) => FavoriteEntryModel.fromFollowRow(r, _resolveImageUrl)),
+        ..._rows(items)
+            .where((r) => !_isDeleted(_embedded(r['items'])?['businesses']))
+            .map((r) => FavoriteEntryModel.fromItemRow(r, _resolveImageUrl)),
+        ..._rows(offers)
+            .where((r) => !_isDeleted(_embedded(r['offers'])?['businesses']))
+            .map((r) => FavoriteEntryModel.fromOfferRow(r, _resolveImageUrl)),
       ].whereType<FavoriteEntryModel>().toList();
     } on PostgrestException catch (e) {
       developer.log(
@@ -128,6 +130,12 @@ class FavoritesRemoteDataSource {
 
   Iterable<Map<String, dynamic>> _rows(dynamic response) =>
       (response as List<dynamic>).whereType<Map<String, dynamic>>();
+
+  Map<String, dynamic>? _embedded(dynamic value) =>
+      value is Map<String, dynamic> ? value : null;
+
+  bool _isDeleted(dynamic business) =>
+      _embedded(business)?['status'] == 'deleted';
 
   String _resolveImageUrl(String raw) {
     if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;

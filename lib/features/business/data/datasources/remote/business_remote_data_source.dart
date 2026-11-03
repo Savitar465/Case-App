@@ -67,6 +67,8 @@ class BusinessRemoteDataSource {
                   .schema(_schema)
                   .from(_table)
                   .select()
+                  // Deleted businesses are soft-deleted rows; hide them.
+                  .neq('status', 'deleted')
                   .order('created_at', ascending: false)
               as List<dynamic>;
       return response

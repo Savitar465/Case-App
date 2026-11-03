@@ -22,8 +22,11 @@ import 'features/business/data/datasources/remote/business_remote_data_source.da
 import 'features/business/data/repositories/business_repository_impl.dart';
 import 'features/business/domain/repositories/business_repository.dart';
 import 'features/business_register/data/datasources/remote/business_registration_remote_data_source.dart';
+import 'features/business_register/data/datasources/remote/catalog_remote_data_source.dart';
 import 'features/business_register/data/repositories/business_registration_repository_impl.dart';
+import 'features/business_register/data/repositories/catalog_repository_impl.dart';
 import 'features/business_register/domain/repositories/business_registration_repository.dart';
+import 'features/business_register/domain/repositories/catalog_repository.dart';
 import 'features/favorites/data/datasources/remote/favorites_remote_data_source.dart';
 import 'features/favorites/data/repositories/favorites_repository_impl.dart';
 import 'features/favorites/domain/repositories/favorites_repository.dart';
@@ -123,6 +126,10 @@ _AppDependencies _buildDependencies(SupabaseClient supabase) {
     remoteDataSource: BusinessRegistrationRemoteDataSource(supabase),
   );
 
+  final catalogRepository = CatalogRepositoryImpl(
+    remoteDataSource: CatalogRemoteDataSource(supabase),
+  );
+
   final favoritesRepository = FavoritesRepositoryImpl(
     remoteDataSource: FavoritesRemoteDataSource(supabase),
   );
@@ -144,6 +151,7 @@ _AppDependencies _buildDependencies(SupabaseClient supabase) {
     reviewRepository: reviewRepository,
     profileRepository: profileRepository,
     businessRegistrationRepository: businessRegistrationRepository,
+    catalogRepository: catalogRepository,
     favoritesRepository: favoritesRepository,
     settingsRepository: settingsRepository,
     plansRepository: plansRepository,
@@ -160,6 +168,7 @@ class _AppDependencies {
     required this.reviewRepository,
     required this.profileRepository,
     required this.businessRegistrationRepository,
+    required this.catalogRepository,
     required this.favoritesRepository,
     required this.settingsRepository,
     required this.plansRepository,
@@ -173,6 +182,7 @@ class _AppDependencies {
   final ReviewRepository reviewRepository;
   final ProfileRepository profileRepository;
   final BusinessRegistrationRepository businessRegistrationRepository;
+  final CatalogRepository catalogRepository;
   final FavoritesRepository favoritesRepository;
   final SettingsRepository settingsRepository;
   final PlansRepository plansRepository;
@@ -216,6 +226,9 @@ class _AppRoot extends StatelessWidget {
         ),
         RepositoryProvider<BusinessRegistrationRepository>.value(
           value: dependencies.businessRegistrationRepository,
+        ),
+        RepositoryProvider<CatalogRepository>.value(
+          value: dependencies.catalogRepository,
         ),
         RepositoryProvider<FavoritesRepository>.value(
           value: dependencies.favoritesRepository,
