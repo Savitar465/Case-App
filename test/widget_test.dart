@@ -38,6 +38,15 @@ class _FakeAuthRepository implements AuthRepository {
 
   @override
   Stream<AuthSession> watchSignIns() => const Stream.empty();
+
+  @override
+  Future<void> sendPasswordResetEmail({required String email}) async {}
+
+  @override
+  Stream<void> watchPasswordRecovery() => const Stream.empty();
+
+  @override
+  Future<void> updatePassword({required String newPassword}) async {}
 }
 
 class _FakeBusinessRepository implements BusinessRepository {

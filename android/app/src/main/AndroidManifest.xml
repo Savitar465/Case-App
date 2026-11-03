@@ -38,7 +38,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data
-                    android:scheme="com.savi.market_app"
+                    android:scheme="com.savi.marketapp"
                     android:host="login-callback" />
             </intent-filter>
         </activity>

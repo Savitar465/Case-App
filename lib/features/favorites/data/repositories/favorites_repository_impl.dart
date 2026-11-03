@@ -24,7 +24,9 @@ class FavoritesRepositoryImpl implements FavoritesRepository {
   @override
   Future<void> refreshFavorites() async {
     try {
-      final entries = await _remote.fetchFavorites();
+      // Copy first: the remote returns `const []` when signed out, and
+      // sorting that in place throws "Cannot modify an unmodifiable list".
+      final entries = List<FavoriteEntry>.of(await _remote.fetchFavorites());
       final epoch = DateTime.fromMillisecondsSinceEpoch(0);
       entries.sort(
         (a, b) => (b.savedAt ?? epoch).compareTo(a.savedAt ?? epoch),

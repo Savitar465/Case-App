@@ -11,8 +11,7 @@ class AuthRemoteDataSource {
   /// Deep link Supabase redirects to after Google consent. Must match the
   /// intent-filter in AndroidManifest.xml and be listed under Authentication →
   /// URL Configuration → Redirect URLs in the Supabase dashboard.
-  static const String oauthRedirectUrl =
-      'com.savi.market_app://login-callback/';
+  static const String oauthRedirectUrl = 'com.savi.marketapp://login-callback/';
 
   /// Launches the Google OAuth flow in an external browser. `supabase_flutter`
   /// picks up the redirect deep link and stores the session itself.
@@ -40,6 +39,33 @@ class AuthRemoteDataSource {
             userId: state.session!.user.id,
           ),
         );
+  }
+
+  /// Emails a password-reset link. The link opens the app through
+  /// [oauthRedirectUrl]; `supabase_flutter` exchanges it for a session and
+  /// fires a `passwordRecovery` event (see [passwordRecoveries]).
+  Future<void> sendPasswordResetEmail(String email) {
+    return _client.auth.resetPasswordForEmail(
+      email,
+      redirectTo: kIsWeb ? null : oauthRedirectUrl,
+    );
+  }
+
+  /// Fires once per opened password-reset link.
+  Stream<void> passwordRecoveries() {
+    return _client.auth.onAuthStateChange
+        .where((state) => state.event == AuthChangeEvent.passwordRecovery)
+        .map((_) {});
+  }
+
+  /// Sets a new password for the user signed in by the recovery link.
+  Future<void> updatePassword(String newPassword) async {
+    if (_client.auth.currentSession == null) {
+      throw const AuthRemoteException(
+        'El enlace expiró. Solicita uno nuevo para restablecer tu contraseña.',
+      );
+    }
+    await _client.auth.updateUser(UserAttributes(password: newPassword));
   }
 
   Future<AuthSessionModel> signInWithPassword({

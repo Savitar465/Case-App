@@ -24,7 +24,7 @@ class SettingsRemoteDataSource {
   /// Google OAuth callback (AuthRemoteDataSource.oauthRedirectUrl), so the
   /// AndroidManifest intent-filter and the Supabase allow-list cover it.
   static const String _emailRedirectUrl =
-      'com.savi.market_app://login-callback/';
+      'com.savi.marketapp://login-callback/';
 
   User _requireUser() {
     final user = _client.auth.currentUser;
