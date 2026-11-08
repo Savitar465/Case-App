@@ -15,7 +15,7 @@ class ItemListPage extends StatelessWidget {
       appBar: AppBar(title: const Text('Productos y servicios')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: BusinessItemsSection(businessId: businessId),
+        child: BusinessItemsSection(businessId: businessId, asCards: false),
       ),
     );
   }
