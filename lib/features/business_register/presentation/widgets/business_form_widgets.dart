@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
@@ -227,8 +227,7 @@ class DayScheduleCard extends StatelessWidget {
                   value: isOpen,
                   activeThumbColor: Colors.white,
                   activeTrackColor: const Color(0xFF22C55E),
-                  onChanged: (value) =>
-                      onChanged(day.copyWith(isOpen: value)),
+                  onChanged: (value) => onChanged(day.copyWith(isOpen: value)),
                 ),
               ),
             ],
@@ -246,8 +245,7 @@ class DayScheduleCard extends StatelessWidget {
                         context,
                         day.ranges[i].open,
                         (v) => onChanged(
-                          day.updateRange(
-                              i, day.ranges[i].copyWith(open: v)),
+                          day.updateRange(i, day.ranges[i].copyWith(open: v)),
                         ),
                       ),
                     ),
@@ -256,7 +254,9 @@ class DayScheduleCard extends StatelessWidget {
                       child: Text(
                         '–',
                         style: TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.w500),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                     _TimeChip(
@@ -265,8 +265,7 @@ class DayScheduleCard extends StatelessWidget {
                         context,
                         day.ranges[i].close,
                         (v) => onChanged(
-                          day.updateRange(
-                              i, day.ranges[i].copyWith(close: v)),
+                          day.updateRange(i, day.ranges[i].copyWith(close: v)),
                         ),
                       ),
                     ),
@@ -324,8 +323,9 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        isOpen ? const Color(0xFF22C55E) : context.palette.textTertiary;
+    final color = isOpen
+        ? const Color(0xFF22C55E)
+        : context.palette.textTertiary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(

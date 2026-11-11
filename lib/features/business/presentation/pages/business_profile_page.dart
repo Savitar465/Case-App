@@ -103,7 +103,9 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
     if (_selectedItems.length == 1) {
       final item = _selectedItems.values.first;
       final priceStr = formatItemPrice(item.currency, item.price);
-      final kind = item.type == ItemType.service ? 'el servicio' : 'el producto';
+      final kind = item.type == ItemType.service
+          ? 'el servicio'
+          : 'el producto';
       return 'Hola ${_business.name}, me interesa consultar sobre $kind "${item.name}" ($priceStr). ¿Tienen disponibilidad o más información?';
     }
 
@@ -414,8 +416,9 @@ class _ContentCard extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               ConstrainedBox(
-                                constraints:
-                                    const BoxConstraints(maxWidth: 160),
+                                constraints: const BoxConstraints(
+                                  maxWidth: 160,
+                                ),
                                 child: Text(
                                   item.name,
                                   maxLines: 1,
@@ -585,10 +588,7 @@ class _Stars extends StatelessWidget {
 }
 
 class _ActionButtons extends StatelessWidget {
-  const _ActionButtons({
-    required this.business,
-    this.onContactWhatsApp,
-  });
+  const _ActionButtons({required this.business, this.onContactWhatsApp});
 
   final Business business;
   final VoidCallback? onContactWhatsApp;
@@ -648,7 +648,8 @@ class _ActionButtons extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: FilledButton.icon(
-            onPressed: onContactWhatsApp ??
+            onPressed:
+                onContactWhatsApp ??
                 () => ContactLauncher.openWhatsApp(context, whatsapp),
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.whatsapp,
@@ -911,43 +912,38 @@ class _ReviewsDialog extends StatelessWidget {
                             ),
                           )
                         : !state.hasReviews
-                            ? Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(32),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.chat_bubble_outline,
-                                        size: 48,
-                                        color: context.palette.textTertiary,
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        'Aún no hay opiniones.\n¡Sé el primero en opinar!',
-                                        textAlign: TextAlign.center,
-                                        style: theme.textTheme.bodyMedium
-                                            ?.copyWith(
-                                              color: context
-                                                  .palette
-                                                  .textSecondary,
-                                            ),
-                                      ),
-                                    ],
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(32),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.chat_bubble_outline,
+                                    size: 48,
+                                    color: context.palette.textTertiary,
                                   ),
-                                ),
-                              )
-                            : ListView.separated(
-                                shrinkWrap: true,
-                                itemCount: state.reviews.length,
-                                separatorBuilder: (_, __) =>
-                                    const SizedBox(height: 10),
-                                itemBuilder: (context, index) {
-                                  return _ReviewCard(
-                                    review: state.reviews[index],
-                                  );
-                                },
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'Aún no hay opiniones.\n¡Sé el primero en opinar!',
+                                    textAlign: TextAlign.center,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: context.palette.textSecondary,
+                                    ),
+                                  ),
+                                ],
                               ),
+                            ),
+                          )
+                        : ListView.separated(
+                            shrinkWrap: true,
+                            itemCount: state.reviews.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 10),
+                            itemBuilder: (context, index) {
+                              return _ReviewCard(review: state.reviews[index]);
+                            },
+                          ),
                   ),
                 ],
               );
@@ -960,11 +956,7 @@ class _ReviewsDialog extends StatelessWidget {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
-    required this.title,
-    this.leadingIcon,
-    this.onSeeAll,
-  });
+  const _SectionHeader({required this.title, this.leadingIcon, this.onSeeAll});
 
   final String title;
   final IconData? leadingIcon;
@@ -1002,11 +994,7 @@ class _SectionHeader extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  Icon(
-                    Icons.chevron_right,
-                    color: AppColors.purple,
-                    size: 20,
-                  ),
+                  Icon(Icons.chevron_right, color: AppColors.purple, size: 20),
                 ],
               ),
             ),
@@ -1291,11 +1279,7 @@ class _WhatsappFab extends StatelessWidget {
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
       ),
       icon: const Icon(Icons.chat),
-      label: Text(
-        label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
+      label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
     );
   }
 }
@@ -1524,12 +1508,11 @@ class _ScheduleLine extends StatelessWidget {
     if (weekly == null) return row;
     final week = weekly;
     return InkWell(
-      onTap: () =>
-          showModalBottomSheet<void>(
-            context: context,
-            showDragHandle: true,
-            builder: (_) => _WeeklyScheduleSheet(schedule: week),
-          ),
+      onTap: () => showModalBottomSheet<void>(
+        context: context,
+        showDragHandle: true,
+        builder: (_) => _WeeklyScheduleSheet(schedule: week),
+      ),
       borderRadius: BorderRadius.circular(8),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 2),
@@ -1556,9 +1539,7 @@ class _WeeklyScheduleSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final today = DateTime
-        .now()
-        .weekday;
+    final today = DateTime.now().weekday;
     final palette = context.palette;
 
     return SafeArea(
@@ -1605,9 +1586,7 @@ class _WeeklyScheduleRow extends StatelessWidget {
     final weight = isToday ? FontWeight.w700 : FontWeight.w500;
     final hours = intervals.isEmpty
         ? 'Cerrado'
-        : intervals
-        .map((i) => '${i.openLabel} - ${i.closeLabel}')
-        .join('\n');
+        : intervals.map((i) => '${i.openLabel} - ${i.closeLabel}').join('\n');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 4),
@@ -1660,10 +1639,7 @@ class _LocationSectionState extends State<_LocationSection> {
   late final Future<String> _streetLabel = _resolveStreetLabel();
 
   Future<String> _resolveStreetLabel() async {
-    final fallback = business.address
-        .split(',')
-        .first
-        .trim();
+    final fallback = business.address.split(',').first.trim();
     if (business.latitude == 0 && business.longitude == 0) return fallback;
     try {
       final placemarks = await placemarkFromCoordinates(

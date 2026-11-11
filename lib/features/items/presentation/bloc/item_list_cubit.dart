@@ -33,11 +33,7 @@ class ItemListCubit extends Cubit<ItemListState> {
                 ? state.filter
                 : _resolveDefaultFilter(items);
             emit(
-              state.copyWith(
-                isLoading: false,
-                items: items,
-                filter: filter,
-              ),
+              state.copyWith(isLoading: false, items: items, filter: filter),
             );
           },
           onError: (Object error, _) {
