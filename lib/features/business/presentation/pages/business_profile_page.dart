@@ -1038,29 +1038,7 @@ class _SectionLabel extends StatelessWidget {
             ),
           ),
         ),
-        if (weekly != null)
-          Icon(
-            Icons.keyboard_arrow_down,
-            size: 20,
-            color: context.palette.textSecondary,
-          ),
       ],
-    );
-
-    if (weekly == null) return row;
-    final week = weekly;
-    return InkWell(
-      onTap: () =>
-          showModalBottomSheet<void>(
-            context: context,
-            showDragHandle: true,
-            builder: (_) => _WeeklyScheduleSheet(schedule: week),
-          ),
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: row,
-      ),
     );
   }
 }
@@ -1534,7 +1512,29 @@ class _ScheduleLine extends StatelessWidget {
             ),
           ),
         ),
+        if (weekly != null)
+          Icon(
+            Icons.keyboard_arrow_down,
+            size: 20,
+            color: context.palette.textSecondary,
+          ),
       ],
+    );
+
+    if (weekly == null) return row;
+    final week = weekly;
+    return InkWell(
+      onTap: () =>
+          showModalBottomSheet<void>(
+            context: context,
+            showDragHandle: true,
+            builder: (_) => _WeeklyScheduleSheet(schedule: week),
+          ),
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: row,
+      ),
     );
   }
 }
