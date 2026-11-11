@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:geocoding/geocoding.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_palette.dart';
 import '../../../../core/utils/contact_launcher.dart';
 import '../../../../core/widgets/full_screen_image_viewer.dart';
+import '../../../items/domain/entities/item.dart';
+import '../../../items/domain/entities/item_type.dart';
 import '../../../items/domain/repositories/item_repository.dart';
 import '../../../items/presentation/bloc/item_list_cubit.dart';
 import '../../../items/presentation/pages/item_list_page.dart';
@@ -44,6 +47,7 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
   late final ReviewListCubit _reviewListCubit;
   late final FollowCubit _followCubit;
   late Business _business;
+  final Map<String, Item> _selectedItems = {};
 
   @override
   void initState() {
@@ -66,6 +70,55 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
       businessId: widget.business.id,
       initialFollowersCount: widget.business.followersCount,
     )..initialize();
+  }
+
+  void _onSelectItem(Item item) {
+    setState(() {
+      if (_selectedItems.containsKey(item.id)) {
+        _selectedItems.remove(item.id);
+      } else {
+        _selectedItems[item.id] = item;
+      }
+    });
+  }
+
+  void _clearSelectedItems() {
+    setState(() {
+      _selectedItems.clear();
+    });
+  }
+
+  void _openWhatsApp() {
+    final whatsapp = _business.whatsapp;
+    if (whatsapp == null) return;
+    final message = _buildWhatsAppMessage();
+    ContactLauncher.openWhatsApp(context, whatsapp, message: message);
+  }
+
+  String _buildWhatsAppMessage() {
+    if (_selectedItems.isEmpty) {
+      return 'Hola ${_business.name}, quisiera hacer una consulta sobre sus servicios y productos.';
+    }
+
+    if (_selectedItems.length == 1) {
+      final item = _selectedItems.values.first;
+      final priceStr = formatItemPrice(item.currency, item.price);
+      final kind = item.type == ItemType.service
+          ? 'el servicio'
+          : 'el producto';
+      return 'Hola ${_business.name}, me interesa consultar sobre $kind "${item.name}" ($priceStr). ¿Tienen disponibilidad o más información?';
+    }
+
+    final buffer = StringBuffer();
+    buffer.writeln(
+      'Hola ${_business.name}, me interesa consultar sobre los siguientes productos/servicios:',
+    );
+    for (final item in _selectedItems.values) {
+      final priceStr = formatItemPrice(item.currency, item.price);
+      buffer.writeln('• ${item.name} ($priceStr)');
+    }
+    buffer.writeln('\n¿Tienen disponibilidad o más información?');
+    return buffer.toString().trim();
   }
 
   @override
@@ -122,6 +175,10 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
                         business: _business,
                         itemListCubit: _itemListCubit,
                         offerListCubit: _offerListCubit,
+                        selectedItems: _selectedItems,
+                        onSelectItem: _onSelectItem,
+                        onClearSelected: _clearSelectedItems,
+                        onContactWhatsApp: _openWhatsApp,
                       ),
                     ),
                     SizedBox(height: whatsapp != null ? 60 : 12),
@@ -136,8 +193,11 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
                 right: 16,
                 bottom: 16,
                 child: _WhatsappFab(
-                  onPressed: () =>
-                      ContactLauncher.openWhatsApp(context, whatsapp),
+                  onPressed: _openWhatsApp,
+                  selectedCount: _selectedItems.length,
+                  singleItemName: _selectedItems.length == 1
+                      ? _selectedItems.values.first.name
+                      : null,
                 ),
               ),
           ],
@@ -201,11 +261,19 @@ class _ContentCard extends StatelessWidget {
     required this.business,
     required this.itemListCubit,
     required this.offerListCubit,
+    this.selectedItems = const {},
+    this.onSelectItem,
+    this.onClearSelected,
+    this.onContactWhatsApp,
   });
 
   final Business business;
   final ItemListCubit itemListCubit;
   final OfferListCubit offerListCubit;
+  final Map<String, Item> selectedItems;
+  final ValueChanged<Item>? onSelectItem;
+  final VoidCallback? onClearSelected;
+  final VoidCallback? onContactWhatsApp;
 
   void _openItems(BuildContext context) {
     Navigator.of(context).push(
@@ -243,7 +311,7 @@ class _ContentCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          const _RatingSummary(),
+          _RatingSummary(business: business),
           const SizedBox(height: 10),
           _LocationSection(business: business),
           const SizedBox(height: 6),
@@ -259,7 +327,10 @@ class _ContentCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 16),
-          _ActionButtons(business: business),
+          _ActionButtons(
+            business: business,
+            onContactWhatsApp: onContactWhatsApp,
+          ),
           const SizedBox(height: 22),
           _OffersBlock(
             cubit: offerListCubit,
@@ -269,16 +340,125 @@ class _ContentCard extends StatelessWidget {
             icon: Icons.touch_app_outlined,
             text: 'Selecciona lo que te interesa para consultar',
           ),
+          if (selectedItems.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.purple.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.purple),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.check_circle,
+                        color: AppColors.purple,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          selectedItems.length == 1
+                              ? '1 elemento seleccionado'
+                              : '${selectedItems.length} elementos seleccionados',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.purple,
+                          ),
+                        ),
+                      ),
+                      if (onClearSelected != null)
+                        InkWell(
+                          onTap: onClearSelected,
+                          borderRadius: BorderRadius.circular(8),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            child: Text(
+                              'Limpiar',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.purple,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      for (final item in selectedItems.values)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: context.palette.surface,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: AppColors.purple.withValues(alpha: 0.5),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxWidth: 160,
+                                ),
+                                child: Text(
+                                  item.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              InkWell(
+                                onTap: () => onSelectItem?.call(item),
+                                child: const Icon(
+                                  Icons.close,
+                                  size: 14,
+                                  color: AppColors.purple,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           BusinessItemsSection(
             businessId: business.id,
             cubit: itemListCubit,
             onSeeAll: () => _openItems(context),
+            selectedItemIds: selectedItems.keys.toSet(),
+            onItemTap: onSelectItem,
           ),
-          const SizedBox(height: 24),
-          const _ReviewsSection(),
-          const SizedBox(height: 24),
-          Center(child: _SocialRow(business: business)),
+          const SizedBox(height: 20),
+          _ReviewsButton(business: business),
+          const SizedBox(height: 20),
+          _SocialNetworksSection(business: business),
           const SizedBox(height: 8),
         ],
       ),
@@ -322,7 +502,9 @@ class _OffersBlock extends StatelessWidget {
 
 /// Real aggregate rating computed from the business's review rows.
 class _RatingSummary extends StatelessWidget {
-  const _RatingSummary();
+  const _RatingSummary({required this.business});
+
+  final Business business;
 
   @override
   Widget build(BuildContext context) {
@@ -331,38 +513,49 @@ class _RatingSummary extends StatelessWidget {
       buildWhen: (a, b) => a.stats != b.stats,
       builder: (context, state) {
         final stats = state.stats;
-        if (!stats.hasReviews) {
-          return Row(
-            children: [
-              const _Stars(rating: 0),
-              const SizedBox(width: 6),
-              Text(
-                'Sin opiniones aún',
-                style: theme.textTheme.bodySmall?.copyWith(
+        return InkWell(
+          onTap: () => _openReviewsDialog(context, business),
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!stats.hasReviews) ...[
+                  const _Stars(rating: 0),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Sin opiniones aún',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: context.palette.textTertiary,
+                    ),
+                  ),
+                ] else ...[
+                  _Stars(rating: stats.average),
+                  const SizedBox(width: 6),
+                  Text(
+                    stats.average.toStringAsFixed(1),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '(${stats.count} ${stats.count == 1 ? 'opinión' : 'opiniones'})',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: context.palette.textTertiary,
+                    ),
+                  ),
+                ],
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.chevron_right,
+                  size: 16,
                   color: context.palette.textTertiary,
                 ),
-              ),
-            ],
-          );
-        }
-        return Row(
-          children: [
-            _Stars(rating: stats.average),
-            const SizedBox(width: 6),
-            Text(
-              stats.average.toStringAsFixed(1),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              ],
             ),
-            const SizedBox(width: 6),
-            Text(
-              '(${stats.count} ${stats.count == 1 ? 'opinión' : 'opiniones'})',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: context.palette.textTertiary,
-              ),
-            ),
-          ],
+          ),
         );
       },
     );
@@ -395,9 +588,10 @@ class _Stars extends StatelessWidget {
 }
 
 class _ActionButtons extends StatelessWidget {
-  const _ActionButtons({required this.business});
+  const _ActionButtons({required this.business, this.onContactWhatsApp});
 
   final Business business;
+  final VoidCallback? onContactWhatsApp;
 
   @override
   Widget build(BuildContext context) {
@@ -454,7 +648,9 @@ class _ActionButtons extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: FilledButton.icon(
-            onPressed: () => ContactLauncher.openWhatsApp(context, whatsapp),
+            onPressed:
+                onContactWhatsApp ??
+                () => ContactLauncher.openWhatsApp(context, whatsapp),
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.whatsapp,
               padding: const EdgeInsets.symmetric(vertical: 12),
@@ -471,9 +667,102 @@ class _ActionButtons extends StatelessWidget {
   }
 }
 
-/// "Opiniones" header + review list, backed by the `reviews` table.
-class _ReviewsSection extends StatelessWidget {
-  const _ReviewsSection();
+void _openReviewsDialog(BuildContext context, Business business) {
+  final cubit = context.read<ReviewListCubit>();
+  showDialog<void>(
+    context: context,
+    builder: (dialogContext) {
+      return BlocProvider<ReviewListCubit>.value(
+        value: cubit,
+        child: _ReviewsDialog(business: business),
+      );
+    },
+  );
+}
+
+/// A dedicated button that displays the rating and review count,
+/// and opens the full reviews dialog when tapped.
+class _ReviewsButton extends StatelessWidget {
+  const _ReviewsButton({required this.business});
+
+  final Business business;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return BlocBuilder<ReviewListCubit, ReviewListState>(
+      builder: (context, state) {
+        final stats = state.stats;
+        return Material(
+          color: context.palette.purpleSurface,
+          borderRadius: BorderRadius.circular(16),
+          child: InkWell(
+            onTap: () => _openReviewsDialog(context, business),
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: context.palette.border),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.star.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.star_rounded,
+                      color: AppColors.star,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          stats.hasReviews
+                              ? 'Opiniones (${stats.count})'
+                              : 'Opiniones',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          stats.hasReviews
+                              ? '${stats.average.toStringAsFixed(1)} de 5 estrellas · Toca para ver'
+                              : 'Sin opiniones · Sé el primero en opinar',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: context.palette.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right,
+                    color: AppColors.purple,
+                    size: 22,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ReviewsDialog extends StatelessWidget {
+  const _ReviewsDialog({required this.business});
+
+  final Business business;
 
   Future<void> _writeReview(BuildContext context) async {
     final cubit = context.read<ReviewListCubit>();
@@ -499,61 +788,179 @@ class _ReviewsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return BlocBuilder<ReviewListCubit, ReviewListState>(
-      builder: (context, state) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _SectionHeader(
-              title: 'Opiniones',
-              actionLabel: state.myReview != null ? 'Editar' : 'Escribir',
-              onSeeAll: () => _writeReview(context),
-            ),
-            const SizedBox(height: 12),
-            if (state.isLoading)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else if (!state.hasReviews)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  'Aún no hay opiniones. ¡Sé el primero en opinar!',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: context.palette.textSecondary,
-                  ),
-                ),
-              )
-            else
-              Column(
+    final size = MediaQuery.of(context).size;
+
+    return Dialog(
+      backgroundColor: context.palette.page,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: size.height * 0.8,
+          maxWidth: 500,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: BlocBuilder<ReviewListCubit, ReviewListState>(
+            builder: (context, state) {
+              final stats = state.stats;
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  for (final review in state.reviews.take(3))
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: _ReviewCard(review: review),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.star_rounded,
+                        color: AppColors.star,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Opiniones (${stats.count})',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.of(context).pop(),
+                        tooltip: 'Cerrar',
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ],
+                  ),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: context.palette.purpleSurface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: context.palette.border),
                     ),
+                    child: Row(
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  stats.hasReviews
+                                      ? stats.average.toStringAsFixed(1)
+                                      : '0.0',
+                                  style: theme.textTheme.headlineMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w800,
+                                        color: context.palette.textPrimary,
+                                      ),
+                                ),
+                                const SizedBox(width: 8),
+                                _Stars(rating: stats.average, size: 18),
+                              ],
+                            ),
+                            Text(
+                              stats.hasReviews
+                                  ? '${stats.count} ${stats.count == 1 ? 'opinión de clientes' : 'opiniones de clientes'}'
+                                  : 'Sin opiniones registradas',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: context.palette.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Spacer(),
+                        FilledButton.icon(
+                          onPressed: () => _writeReview(context),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.purple,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          icon: Icon(
+                            state.myReview != null
+                                ? Icons.edit
+                                : Icons.add_comment,
+                            size: 16,
+                          ),
+                          label: Text(
+                            state.myReview != null ? 'Editar' : 'Opinar',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Flexible(
+                    child: state.isLoading
+                        ? const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(32),
+                              child: CircularProgressIndicator(),
+                            ),
+                          )
+                        : !state.hasReviews
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(32),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.chat_bubble_outline,
+                                    size: 48,
+                                    color: context.palette.textTertiary,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'Aún no hay opiniones.\n¡Sé el primero en opinar!',
+                                    textAlign: TextAlign.center,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: context.palette.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : ListView.separated(
+                            shrinkWrap: true,
+                            itemCount: state.reviews.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 10),
+                            itemBuilder: (context, index) {
+                              return _ReviewCard(review: state.reviews[index]);
+                            },
+                          ),
+                  ),
                 ],
-              ),
-          ],
-        );
-      },
+              );
+            },
+          ),
+        ),
+      ),
     );
   }
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
-    required this.title,
-    this.leadingIcon,
-    this.onSeeAll,
-    this.actionLabel = 'Ver todas',
-  });
+  const _SectionHeader({required this.title, this.leadingIcon, this.onSeeAll});
 
   final String title;
   final IconData? leadingIcon;
   final VoidCallback? onSeeAll;
-  final String actionLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -575,23 +982,19 @@ class _SectionHeader extends StatelessWidget {
           InkWell(
             onTap: onSeeAll,
             borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    actionLabel,
-                    style: const TextStyle(
+                    'Ver todas',
+                    style: TextStyle(
                       color: AppColors.purple,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const Icon(
-                    Icons.chevron_right,
-                    color: AppColors.purple,
-                    size: 20,
-                  ),
+                  Icon(Icons.chevron_right, color: AppColors.purple, size: 20),
                 ],
               ),
             ),
@@ -717,20 +1120,20 @@ class _ReviewCard extends StatelessWidget {
   }
 }
 
-/// Social links pulled from `businesses.social_networks` (+ website), opened
-/// with the system browser/app.
-class _SocialRow extends StatelessWidget {
-  const _SocialRow({required this.business});
+/// Social links pulled from `businesses.social_networks` (+ website), placed
+/// where opinions previously were.
+class _SocialNetworksSection extends StatelessWidget {
+  const _SocialNetworksSection({required this.business});
 
   final Business business;
 
-  static const Map<String, IconData> _icons = {
-    'facebook': Icons.facebook,
-    'instagram': Icons.camera_alt_outlined,
-    'tiktok': Icons.music_note,
-    'twitter': Icons.alternate_email,
-    'x': Icons.alternate_email,
-    'youtube': Icons.smart_display_outlined,
+  static const Map<String, (IconData, String, Color)> _networkMeta = {
+    'facebook': (Icons.facebook, 'Facebook', Color(0xFF1877F2)),
+    'instagram': (Icons.camera_alt_outlined, 'Instagram', Color(0xFFE4405F)),
+    'tiktok': (Icons.music_note, 'TikTok', Color(0xFF000000)),
+    'twitter': (Icons.alternate_email, 'X (Twitter)', Color(0xFF1DA1F2)),
+    'x': (Icons.alternate_email, 'X', Color(0xFF1DA1F2)),
+    'youtube': (Icons.smart_display_outlined, 'YouTube', Color(0xFFFF0000)),
   };
 
   @override
@@ -742,11 +1145,16 @@ class _SocialRow extends StatelessWidget {
         final str = value?.toString().trim() ?? '';
         if (str.isEmpty) return;
         final lower = key.toLowerCase();
-        final icon = _icons[lower];
-        if (icon == null) return;
+        final meta = _networkMeta[lower];
+        final icon = meta?.$1 ?? Icons.share;
+        final label = meta?.$2 ?? key;
+        final color = meta?.$3 ?? AppColors.purple;
         entries.add(
           _SocialEntry(
             icon: icon,
+            label: label,
+            handle: str,
+            color: color,
             onTap: () => ContactLauncher.openSocial(context, lower, str),
           ),
         );
@@ -757,43 +1165,111 @@ class _SocialRow extends StatelessWidget {
       entries.add(
         _SocialEntry(
           icon: Icons.language,
+          label: 'Sitio web',
+          handle: website.trim(),
+          color: AppColors.purple,
           onTap: () => ContactLauncher.openWebsite(context, website),
         ),
       );
     }
+
     if (entries.isEmpty) return const SizedBox.shrink();
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final entry in entries)
-          IconButton(
-            onPressed: entry.onTap,
-            icon: Icon(
-              entry.icon,
-              color: context.palette.textPrimary,
-              size: 26,
-            ),
-          ),
+        const _SectionHeader(
+          leadingIcon: Icons.share_outlined,
+          title: 'Redes sociales',
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            for (final entry in entries)
+              Material(
+                color: context.palette.purpleSurface,
+                borderRadius: BorderRadius.circular(12),
+                child: InkWell(
+                  onTap: entry.onTap,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: context.palette.border),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(entry.icon, color: entry.color, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          entry.label,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Icon(
+                          Icons.open_in_new,
+                          size: 13,
+                          color: context.palette.textTertiary,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ],
     );
   }
 }
 
 class _SocialEntry {
-  const _SocialEntry({required this.icon, required this.onTap});
+  const _SocialEntry({
+    required this.icon,
+    required this.label,
+    required this.handle,
+    required this.color,
+    required this.onTap,
+  });
 
   final IconData icon;
+  final String label;
+  final String handle;
+  final Color color;
   final VoidCallback onTap;
 }
 
 class _WhatsappFab extends StatelessWidget {
-  const _WhatsappFab({required this.onPressed});
+  const _WhatsappFab({
+    required this.onPressed,
+    this.selectedCount = 0,
+    this.singleItemName,
+  });
 
   final VoidCallback onPressed;
+  final int selectedCount;
+  final String? singleItemName;
 
   @override
   Widget build(BuildContext context) {
+    final String label;
+    if (selectedCount == 0) {
+      label = 'Consultar por WhatsApp';
+    } else if (selectedCount == 1) {
+      label = 'Consultar sobre "$singleItemName"';
+    } else {
+      label = 'Consultar sobre $selectedCount productos';
+    }
     return FilledButton.icon(
       onPressed: onPressed,
       style: FilledButton.styleFrom(
@@ -803,7 +1279,7 @@ class _WhatsappFab extends StatelessWidget {
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
       ),
       icon: const Icon(Icons.chat),
-      label: const Text('Consultar por WhatsApp'),
+      label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
     );
   }
 }
@@ -985,10 +1461,10 @@ class _ScheduleLine extends StatelessWidget {
 
     bool isOpen;
     String? detail;
+    BusinessSchedule? weekly;
     if (schedule != null && schedule.isNotEmpty) {
-      final status = BusinessSchedule.fromMap(
-        schedule,
-      ).statusAt(DateTime.now());
+      weekly = BusinessSchedule.fromMap(schedule);
+      final status = weekly.statusAt(DateTime.now());
       isOpen = status.isOpen;
       detail = status.detail;
     } else {
@@ -996,7 +1472,7 @@ class _ScheduleLine extends StatelessWidget {
     }
 
     final color = isOpen ? Colors.green : Colors.redAccent;
-    return Row(
+    final row = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(Icons.access_time, color: color, size: 18),
@@ -1020,15 +1496,167 @@ class _ScheduleLine extends StatelessWidget {
             ),
           ),
         ),
+        if (weekly != null)
+          Icon(
+            Icons.keyboard_arrow_down,
+            size: 20,
+            color: context.palette.textSecondary,
+          ),
       ],
+    );
+
+    if (weekly == null) return row;
+    final week = weekly;
+    return InkWell(
+      onTap: () => showModalBottomSheet<void>(
+        context: context,
+        showDragHandle: true,
+        builder: (_) => _WeeklyScheduleSheet(schedule: week),
+      ),
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: row,
+      ),
     );
   }
 }
 
-class _LocationSection extends StatelessWidget {
+class _WeeklyScheduleSheet extends StatelessWidget {
+  const _WeeklyScheduleSheet({required this.schedule});
+
+  final BusinessSchedule schedule;
+
+  static const _dayNames = {
+    1: 'Lunes',
+    2: 'Martes',
+    3: 'Miércoles',
+    4: 'Jueves',
+    5: 'Viernes',
+    6: 'Sábado',
+    7: 'Domingo',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final today = DateTime.now().weekday;
+    final palette = context.palette;
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Horarios',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            for (var day = 1; day <= 7; day++)
+              _WeeklyScheduleRow(
+                day: _dayNames[day]!,
+                intervals: schedule.intervalsFor(day),
+                isToday: day == today,
+                mutedColor: palette.textSecondary,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WeeklyScheduleRow extends StatelessWidget {
+  const _WeeklyScheduleRow({
+    required this.day,
+    required this.intervals,
+    required this.isToday,
+    required this.mutedColor,
+  });
+
+  final String day;
+  final List<ScheduleInterval> intervals;
+  final bool isToday;
+  final Color mutedColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final weight = isToday ? FontWeight.w700 : FontWeight.w500;
+    final hours = intervals.isEmpty
+        ? 'Cerrado'
+        : intervals.map((i) => '${i.openLabel} - ${i.closeLabel}').join('\n');
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: isToday ? context.palette.purpleSurface : null,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Text(
+              isToday ? '$day (hoy)' : day,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: weight,
+                color: isToday ? AppColors.purple : null,
+              ),
+            ),
+          ),
+          Text(
+            hours,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: weight,
+              color: intervals.isEmpty ? Colors.redAccent : mutedColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LocationSection extends StatefulWidget {
   const _LocationSection({required this.business});
 
   final Business business;
+
+  @override
+  State<_LocationSection> createState() => _LocationSectionState();
+}
+
+class _LocationSectionState extends State<_LocationSection> {
+  Business get business => widget.business;
+
+  /// "Calle 123" for the map link; falls back to the first address segment.
+  late final Future<String> _streetLabel = _resolveStreetLabel();
+
+  Future<String> _resolveStreetLabel() async {
+    final fallback = business.address.split(',').first.trim();
+    if (business.latitude == 0 && business.longitude == 0) return fallback;
+    try {
+      final placemarks = await placemarkFromCoordinates(
+        business.latitude,
+        business.longitude,
+      );
+      if (placemarks.isEmpty) return fallback;
+      final p = placemarks.first;
+      final street = (p.thoroughfare ?? '').trim();
+      final number = (p.subThoroughfare ?? '').trim();
+      if (street.isEmpty) return fallback;
+      return number.isEmpty ? street : '$street $number';
+    } catch (error) {
+      debugPrint('Reverse geocoding failed: $error');
+      return fallback;
+    }
+  }
 
   void _openMap(BuildContext context) {
     ContactLauncher.openGoogleMaps(
@@ -1069,24 +1697,42 @@ class _LocationSection extends StatelessWidget {
           InkWell(
             onTap: () => _openMap(context),
             borderRadius: BorderRadius.circular(8),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(vertical: 2),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.map_outlined, size: 16, color: AppColors.purple),
-                  SizedBox(width: 6),
-                  Text(
-                    'Ver en Google Maps',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.purple,
-                      decoration: TextDecoration.underline,
+                  const Icon(
+                    Icons.map_outlined,
+                    size: 16,
+                    color: AppColors.purple,
+                  ),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: FutureBuilder<String>(
+                      future: _streetLabel,
+                      builder: (context, snapshot) {
+                        final street = snapshot.data ?? '';
+                        return Text(
+                          street.isEmpty ? 'Ver en Google Maps' : street,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.purple,
+                            decoration: TextDecoration.underline,
+                          ),
+                        );
+                      },
                     ),
                   ),
-                  SizedBox(width: 4),
-                  Icon(Icons.open_in_new, size: 13, color: AppColors.purple),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.open_in_new,
+                    size: 13,
+                    color: AppColors.purple,
+                  ),
                 ],
               ),
             ),

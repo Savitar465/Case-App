@@ -28,7 +28,14 @@ class ItemListCubit extends Cubit<ItemListState> {
     _subscription = _repository
         .watchItems(_businessId)
         .listen(
-          (items) => emit(state.copyWith(isLoading: false, items: items)),
+          (items) {
+            final filter = state.hasExplicitFilter
+                ? state.filter
+                : _resolveDefaultFilter(items);
+            emit(
+              state.copyWith(isLoading: false, items: items, filter: filter),
+            );
+          },
           onError: (Object error, _) {
             final message = error is ItemFailure
                 ? error.message
@@ -52,7 +59,22 @@ class ItemListCubit extends Cubit<ItemListState> {
   }
 
   void selectFilter(ItemTypeFilter filter) {
-    emit(state.copyWith(filter: filter));
+    emit(state.copyWith(filter: filter, hasExplicitFilter: true));
+  }
+
+  static ItemTypeFilter _resolveDefaultFilter(List<Item> items) {
+    var products = 0;
+    var services = 0;
+    for (final item in items) {
+      if (item.type == ItemType.product) {
+        products++;
+      } else if (item.type == ItemType.service) {
+        services++;
+      }
+    }
+    return services > products
+        ? ItemTypeFilter.services
+        : ItemTypeFilter.products;
   }
 
   @override

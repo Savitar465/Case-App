@@ -16,7 +16,7 @@ class OffersCarousel extends StatefulWidget {
 }
 
 class _OffersCarouselState extends State<OffersCarousel> {
-  final _controller = PageController(viewportFraction: 0.66);
+  final _controller = PageController(viewportFraction: 0.47);
   int _page = 0;
 
   @override
@@ -115,7 +115,7 @@ class _OfferBanner extends StatelessWidget {
                 right: 0,
                 top: 0,
                 bottom: 0,
-                width: 150,
+                width: 100,
                 child: Image.network(
                   offer.imageUrl!,
                   fit: BoxFit.cover,
@@ -150,7 +150,7 @@ class _OfferBanner extends StatelessWidget {
                     _headline,
                     style: const TextStyle(
                       color: Color(0xFFFFE082),
-                      fontSize: 30,
+                      fontSize: 26,
                       height: 1,
                       fontWeight: FontWeight.w900,
                     ),

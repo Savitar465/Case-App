@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:market_app/core/theme/app_colors.dart';
 import 'package:market_app/core/theme/app_palette.dart';
-import 'package:market_app/features/market/domain/entities/category.dart';
 import 'package:market_app/features/market/presentation/bloc/market_cubit.dart';
 
 /// Shows the bottom sheet modal for filtering businesses in the market.
@@ -35,19 +34,15 @@ class _MarketFiltersSheetState extends State<MarketFiltersSheet> {
   late bool _openNow;
   late bool _offersOnly;
   String? _selectedPriceTier;
-  String? _selectedCategoryId;
-  late List<MarketCategory> _categories;
 
   @override
   void initState() {
     super.initState();
     final state = context.read<MarketCubit>().state;
-    _categories = state.categories.where((c) => c.name != 'Otros').toList();
     _distanceValue = state.maxDistanceKm ?? 5.0;
     _openNow = state.openNowOnly;
     _offersOnly = state.offersOnly;
     _selectedPriceTier = state.priceTier;
-    _selectedCategoryId = state.selectedCategoryId;
   }
 
   void _resetFilters() {
@@ -56,7 +51,6 @@ class _MarketFiltersSheetState extends State<MarketFiltersSheet> {
       _openNow = false;
       _offersOnly = false;
       _selectedPriceTier = null;
-      _selectedCategoryId = null;
     });
   }
 
@@ -73,8 +67,6 @@ class _MarketFiltersSheetState extends State<MarketFiltersSheet> {
       clearMaxDistance: maxDist == null,
       priceTier: _selectedPriceTier,
       clearPriceTier: _selectedPriceTier == null,
-      selectedCategoryId: _selectedCategoryId,
-      clearSelectedCategory: _selectedCategoryId == null,
     );
     Navigator.of(context).pop();
   }
@@ -115,22 +107,6 @@ class _MarketFiltersSheetState extends State<MarketFiltersSheet> {
                 value: _distanceValue,
                 onChanged: (val) => setState(() => _distanceValue = val),
               ),
-              if (_categories.isNotEmpty) ...[
-                const SizedBox(height: 20),
-                const _SectionTitle(title: 'Categorías'),
-                const SizedBox(height: 10),
-                _CategorySelector(
-                  categories: _categories,
-                  selectedId: _selectedCategoryId,
-                  onSelected: (id) {
-                    setState(() {
-                      _selectedCategoryId = _selectedCategoryId == id
-                          ? null
-                          : id;
-                    });
-                  },
-                ),
-              ],
               const SizedBox(height: 20),
               const _SectionTitle(title: 'Estado del negocio'),
               const SizedBox(height: 10),
@@ -506,104 +482,6 @@ class _FooterButtons extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _CategorySelector extends StatelessWidget {
-  const _CategorySelector({
-    required this.categories,
-    required this.selectedId,
-    required this.onSelected,
-  });
-
-  final List<MarketCategory> categories;
-  final String? selectedId;
-  final ValueChanged<String> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        for (final category in categories)
-          _CategoryChip(
-            category: category,
-            isSelected: category.id == selectedId,
-            onTap: () => onSelected(category.id),
-          ),
-      ],
-    );
-  }
-}
-
-class _CategoryChip extends StatelessWidget {
-  const _CategoryChip({
-    required this.category,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final MarketCategory category;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  IconData _iconFor(String name) {
-    return switch (name) {
-      'food' => Icons.lunch_dining,
-      'education' => Icons.school,
-      'health' => Icons.monitor_heart,
-      'entertainment' => Icons.movie_filter,
-      'sports' => Icons.fitness_center,
-      'technology' => Icons.devices,
-      'travel' => Icons.flight,
-      'music' => Icons.music_note,
-      'shopping' => Icons.shopping_bag,
-      'finance' => Icons.savings,
-      _ => Icons.storefront,
-    };
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-
-    return Material(
-      color: isSelected ? palette.purpleSurface : palette.mutedFill,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: isSelected ? AppColors.purple : palette.neutralBorder,
-          width: isSelected ? 1.5 : 1,
-        ),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                _iconFor(category.name),
-                size: 16,
-                color: isSelected ? AppColors.purple : palette.textSecondary,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                category.nameEs,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: isSelected ? AppColors.purple : palette.textPrimary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

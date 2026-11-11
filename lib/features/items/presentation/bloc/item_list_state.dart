@@ -8,12 +8,14 @@ class ItemListState extends Equatable {
     this.isLoading = false,
     this.error,
     this.filter = ItemTypeFilter.products,
+    this.hasExplicitFilter = false,
   });
 
   final List<Item> items;
   final bool isLoading;
   final String? error;
   final ItemTypeFilter filter;
+  final bool hasExplicitFilter;
 
   List<Item> get visibleItems {
     switch (filter) {
@@ -31,6 +33,7 @@ class ItemListState extends Equatable {
     bool? isLoading,
     String? error,
     ItemTypeFilter? filter,
+    bool? hasExplicitFilter,
     bool clearError = false,
   }) {
     return ItemListState(
@@ -38,9 +41,16 @@ class ItemListState extends Equatable {
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : error ?? this.error,
       filter: filter ?? this.filter,
+      hasExplicitFilter: hasExplicitFilter ?? this.hasExplicitFilter,
     );
   }
 
   @override
-  List<Object?> get props => [items, isLoading, error, filter];
+  List<Object?> get props => [
+    items,
+    isLoading,
+    error,
+    filter,
+    hasExplicitFilter,
+  ];
 }

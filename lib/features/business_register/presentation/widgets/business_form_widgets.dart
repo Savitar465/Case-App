@@ -165,7 +165,7 @@ class CountryCodeBox extends StatelessWidget {
 }
 
 // ── Schedule ─────────────────────────────────────────────────────────────
-/// One weekday: open/closed switch plus one row per shift ("turno"), with
+/// One weekday: open/closed toggle plus one row per shift ("turno"), with
 /// "Agregar turno" for split schedules. Reports the whole updated day.
 class DayScheduleCard extends StatelessWidget {
   const DayScheduleCard({
@@ -198,50 +198,48 @@ class DayScheduleCard extends StatelessWidget {
     final isOpen = day.isOpen;
     final error = day.validationError;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: context.palette.faint),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Header: day name + status chip + switch ───────────────────
           Row(
             children: [
               Expanded(
                 child: Text(
                   day.label,
                   style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
-              Text(
-                isOpen ? 'Abierto' : 'Cerrado',
-                style: TextStyle(
-                  color: isOpen
-                      ? const Color(0xFF22C55E)
-                      : context.palette.textTertiary,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 18,
+              _StatusChip(isOpen: isOpen),
+              const SizedBox(width: 4),
+              Transform.scale(
+                scale: 0.8,
+                alignment: Alignment.centerRight,
+                child: Switch(
+                  value: isOpen,
+                  activeThumbColor: Colors.white,
+                  activeTrackColor: const Color(0xFF22C55E),
+                  onChanged: (value) => onChanged(day.copyWith(isOpen: value)),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Switch(
-                value: isOpen,
-                activeThumbColor: Colors.white,
-                activeTrackColor: const Color(0xFF3B7A2A),
-                onChanged: (value) => onChanged(day.copyWith(isOpen: value)),
               ),
             ],
           ),
+          // ── Shift rows ────────────────────────────────────────────────
           if (isOpen) ...[
             for (var i = 0; i < day.ranges.length; i++)
               Padding(
-                padding: const EdgeInsets.only(top: 4),
+                padding: const EdgeInsets.only(top: 6),
                 child: Row(
                   children: [
-                    _TimeText(
+                    _TimeChip(
                       value: day.ranges[i].open,
                       onTap: () => _pickTime(
                         context,
@@ -252,10 +250,16 @@ class DayScheduleCard extends StatelessWidget {
                       ),
                     ),
                     const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 10),
-                      child: Text('-', style: TextStyle(fontSize: 22)),
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(
+                        '–',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
-                    _TimeText(
+                    _TimeChip(
                       value: day.ranges[i].close,
                       onTap: () => _pickTime(
                         context,
@@ -267,37 +271,43 @@ class DayScheduleCard extends StatelessWidget {
                     ),
                     const Spacer(),
                     if (day.ranges.length > 1)
-                      IconButton(
-                        tooltip: 'Quitar turno',
-                        icon: Icon(
-                          Icons.remove_circle_outline,
+                      GestureDetector(
+                        onTap: () => onChanged(day.removeRange(i)),
+                        child: Icon(
+                          Icons.close,
+                          size: 16,
                           color: context.palette.textTertiary,
                         ),
-                        onPressed: () => onChanged(day.removeRange(i)),
                       ),
                   ],
                 ),
               ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: () => onChanged(day.addRange()),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.purple,
-                  padding: EdgeInsets.zero,
-                ),
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Agregar turno'),
+            const SizedBox(height: 6),
+            GestureDetector(
+              onTap: () => onChanged(day.addRange()),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.add, size: 14, color: AppColors.purple),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Agregar turno',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.purple,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
-            if (error != null)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  error,
-                  style: const TextStyle(color: Colors.redAccent, fontSize: 13),
-                ),
+            if (error != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                error,
+                style: const TextStyle(color: Colors.redAccent, fontSize: 12),
               ),
+            ],
           ],
         ],
       ),
@@ -305,8 +315,38 @@ class DayScheduleCard extends StatelessWidget {
   }
 }
 
-class _TimeText extends StatelessWidget {
-  const _TimeText({required this.value, required this.onTap});
+/// Small coloured pill showing "Abierto" or "Cerrado".
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.isOpen});
+
+  final bool isOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isOpen
+        ? const Color(0xFF22C55E)
+        : context.palette.textTertiary;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        isOpen ? 'Abierto' : 'Cerrado',
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+/// Tappable time chip (e.g. "8:00").
+class _TimeChip extends StatelessWidget {
+  const _TimeChip({required this.value, required this.onTap});
 
   final String value;
   final VoidCallback onTap;
@@ -315,12 +355,20 @@ class _TimeText extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Text(
-        value,
-        style: TextStyle(
-          fontSize: 22,
-          color: context.palette.textSecondary,
-          decoration: TextDecoration.underline,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: context.palette.purpleSurface,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.purple.withValues(alpha: 0.4)),
+        ),
+        child: Text(
+          value,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: context.palette.textPrimary,
+          ),
         ),
       ),
     );
