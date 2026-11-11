@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:geocoding/geocoding.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_palette.dart';
@@ -1037,7 +1038,29 @@ class _SectionLabel extends StatelessWidget {
             ),
           ),
         ),
+        if (weekly != null)
+          Icon(
+            Icons.keyboard_arrow_down,
+            size: 20,
+            color: context.palette.textSecondary,
+          ),
       ],
+    );
+
+    if (weekly == null) return row;
+    final week = weekly;
+    return InkWell(
+      onTap: () =>
+          showModalBottomSheet<void>(
+            context: context,
+            showDragHandle: true,
+            builder: (_) => _WeeklyScheduleSheet(schedule: week),
+          ),
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: row,
+      ),
     );
   }
 }
@@ -1476,10 +1499,10 @@ class _ScheduleLine extends StatelessWidget {
 
     bool isOpen;
     String? detail;
+    BusinessSchedule? weekly;
     if (schedule != null && schedule.isNotEmpty) {
-      final status = BusinessSchedule.fromMap(
-        schedule,
-      ).statusAt(DateTime.now());
+      weekly = BusinessSchedule.fromMap(schedule);
+      final status = weekly.statusAt(DateTime.now());
       isOpen = status.isOpen;
       detail = status.detail;
     } else {
@@ -1487,7 +1510,7 @@ class _ScheduleLine extends StatelessWidget {
     }
 
     final color = isOpen ? Colors.green : Colors.redAccent;
-    return Row(
+    final row = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(Icons.access_time, color: color, size: 18),
@@ -1516,10 +1539,148 @@ class _ScheduleLine extends StatelessWidget {
   }
 }
 
-class _LocationSection extends StatelessWidget {
+class _WeeklyScheduleSheet extends StatelessWidget {
+  const _WeeklyScheduleSheet({required this.schedule});
+
+  final BusinessSchedule schedule;
+
+  static const _dayNames = {
+    1: 'Lunes',
+    2: 'Martes',
+    3: 'Miércoles',
+    4: 'Jueves',
+    5: 'Viernes',
+    6: 'Sábado',
+    7: 'Domingo',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final today = DateTime
+        .now()
+        .weekday;
+    final palette = context.palette;
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Horarios',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            for (var day = 1; day <= 7; day++)
+              _WeeklyScheduleRow(
+                day: _dayNames[day]!,
+                intervals: schedule.intervalsFor(day),
+                isToday: day == today,
+                mutedColor: palette.textSecondary,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WeeklyScheduleRow extends StatelessWidget {
+  const _WeeklyScheduleRow({
+    required this.day,
+    required this.intervals,
+    required this.isToday,
+    required this.mutedColor,
+  });
+
+  final String day;
+  final List<ScheduleInterval> intervals;
+  final bool isToday;
+  final Color mutedColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final weight = isToday ? FontWeight.w700 : FontWeight.w500;
+    final hours = intervals.isEmpty
+        ? 'Cerrado'
+        : intervals
+        .map((i) => '${i.openLabel} - ${i.closeLabel}')
+        .join('\n');
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: isToday ? context.palette.purpleSurface : null,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Text(
+              isToday ? '$day (hoy)' : day,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: weight,
+                color: isToday ? AppColors.purple : null,
+              ),
+            ),
+          ),
+          Text(
+            hours,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: weight,
+              color: intervals.isEmpty ? Colors.redAccent : mutedColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LocationSection extends StatefulWidget {
   const _LocationSection({required this.business});
 
   final Business business;
+
+  @override
+  State<_LocationSection> createState() => _LocationSectionState();
+}
+
+class _LocationSectionState extends State<_LocationSection> {
+  Business get business => widget.business;
+
+  /// "Calle 123" for the map link; falls back to the first address segment.
+  late final Future<String> _streetLabel = _resolveStreetLabel();
+
+  Future<String> _resolveStreetLabel() async {
+    final fallback = business.address
+        .split(',')
+        .first
+        .trim();
+    if (business.latitude == 0 && business.longitude == 0) return fallback;
+    try {
+      final placemarks = await placemarkFromCoordinates(
+        business.latitude,
+        business.longitude,
+      );
+      if (placemarks.isEmpty) return fallback;
+      final p = placemarks.first;
+      final street = (p.thoroughfare ?? '').trim();
+      final number = (p.subThoroughfare ?? '').trim();
+      if (street.isEmpty) return fallback;
+      return number.isEmpty ? street : '$street $number';
+    } catch (error) {
+      debugPrint('Reverse geocoding failed: $error');
+      return fallback;
+    }
+  }
 
   void _openMap(BuildContext context) {
     ContactLauncher.openGoogleMaps(
@@ -1560,24 +1721,42 @@ class _LocationSection extends StatelessWidget {
           InkWell(
             onTap: () => _openMap(context),
             borderRadius: BorderRadius.circular(8),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(vertical: 2),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.map_outlined, size: 16, color: AppColors.purple),
-                  SizedBox(width: 6),
-                  Text(
-                    'Ver en Google Maps',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.purple,
-                      decoration: TextDecoration.underline,
+                  const Icon(
+                    Icons.map_outlined,
+                    size: 16,
+                    color: AppColors.purple,
+                  ),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: FutureBuilder<String>(
+                      future: _streetLabel,
+                      builder: (context, snapshot) {
+                        final street = snapshot.data ?? '';
+                        return Text(
+                          street.isEmpty ? 'Ver en Google Maps' : street,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.purple,
+                            decoration: TextDecoration.underline,
+                          ),
+                        );
+                      },
                     ),
                   ),
-                  SizedBox(width: 4),
-                  Icon(Icons.open_in_new, size: 13, color: AppColors.purple),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.open_in_new,
+                    size: 13,
+                    color: AppColors.purple,
+                  ),
                 ],
               ),
             ),
