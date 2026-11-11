@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 
-          import 'core/theme/app_theme.dart';
+import 'core/theme/app_theme.dart';
 import 'features/auth/data/datasources/remote/auth_remote_data_source.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/auth/domain/repositories/auth_repository.dart';
@@ -21,10 +21,6 @@ import 'features/auth/presentation/pages/signup_page.dart';
 import 'features/business/data/datasources/remote/business_remote_data_source.dart';
 import 'features/business/data/repositories/business_repository_impl.dart';
 import 'features/business/domain/repositories/business_repository.dart';
-import 'features/market/data/datasources/market_remote_data_source.dart';
-import 'features/market/data/repositories/market_repository_impl.dart';
-import 'features/market/domain/repositories/market_repository.dart';
-import 'features/market/presentation/pages/market_home_page.dart';
 import 'features/business_register/data/datasources/remote/business_registration_remote_data_source.dart';
 import 'features/business_register/data/datasources/remote/catalog_remote_data_source.dart';
 import 'features/business_register/data/repositories/business_registration_repository_impl.dart';
@@ -66,10 +62,6 @@ import 'features/settings/domain/usecases/load_account_settings_use_case.dart';
 import 'features/settings/domain/usecases/update_theme_preference_use_case.dart';
 import 'features/settings/presentation/bloc/appearance_cubit.dart';
 import 'features/welcome/presentation/pages/welcome_page.dart';
-import 'features/market/data/datasources/market_remote_data_source.dart';
-import 'features/market/data/repositories/market_repository_impl.dart';
-import 'features/market/domain/repositories/market_repository.dart';
-import 'features/market/presentation/pages/market_home_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -92,8 +84,10 @@ Future<SupabaseClient> _initializeSupabase() async {
   }
 
   // Sanitizamos la URL: eliminamos espacios, barras finales y el sufijo /rest/v1 si existe
-  final url = rawUrl.trim().replaceAll(RegExp(r'/rest/v1/?$'), '').replaceAll(RegExp(r'/$'), '');
-
+  final url = rawUrl
+      .trim()
+      .replaceAll(RegExp(r'/rest/v1/?$'), '')
+      .replaceAll(RegExp(r'/$'), '');
 
   await Supabase.initialize(url: url, anonKey: anonKey);
   return Supabase.instance.client;
