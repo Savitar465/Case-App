@@ -81,8 +81,6 @@ class MarketCubit extends Cubit<MarketState> {
     bool? offersOnly,
     double? maxDistanceKm,
     bool clearMaxDistance = false,
-    String? priceTier,
-    bool clearPriceTier = false,
     String? selectedCategoryId,
     bool clearSelectedCategory = false,
   }) {
@@ -94,8 +92,6 @@ class MarketCubit extends Cubit<MarketState> {
             ? null
             : maxDistanceKm ?? state.maxDistanceKm,
         clearMaxDistance: clearMaxDistance,
-        priceTier: clearPriceTier ? null : priceTier ?? state.priceTier,
-        clearPriceTier: clearPriceTier,
         selectedCategoryId: clearSelectedCategory
             ? null
             : selectedCategoryId ?? state.selectedCategoryId,
@@ -111,7 +107,6 @@ class MarketCubit extends Cubit<MarketState> {
       offersOnly: false,
       sortByDistance: false,
       clearMaxDistance: true,
-      clearPriceTier: true,
     ),
   );
 

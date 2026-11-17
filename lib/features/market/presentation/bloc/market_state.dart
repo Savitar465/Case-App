@@ -11,7 +11,6 @@ class MarketState extends Equatable {
     this.offersOnly = false,
     this.sortByDistance = false,
     this.maxDistanceKm,
-    this.priceTier,
     this.userLatitude,
     this.userLongitude,
     this.locationLabel = 'Pando',
@@ -29,7 +28,6 @@ class MarketState extends Equatable {
   final bool offersOnly;
   final bool sortByDistance;
   final double? maxDistanceKm;
-  final String? priceTier;
   final double? userLatitude;
   final double? userLongitude;
   final String locationLabel;
@@ -46,7 +44,6 @@ class MarketState extends Equatable {
     if (offersOnly) count++;
     if (sortByDistance) count++;
     if (maxDistanceKm != null) count++;
-    if (priceTier != null) count++;
     return count;
   }
 
@@ -85,9 +82,6 @@ class MarketState extends Equatable {
           return false;
         }
       }
-      if (priceTier != null) {
-        if (priceTier == 'premium' && !b.isPro) return false;
-      }
       return true;
     }).toList();
     if (sortByDistance && hasUserLocation) {
@@ -112,8 +106,6 @@ class MarketState extends Equatable {
     bool? sortByDistance,
     double? maxDistanceKm,
     bool clearMaxDistance = false,
-    String? priceTier,
-    bool clearPriceTier = false,
     double? userLatitude,
     double? userLongitude,
     String? locationLabel,
@@ -136,7 +128,6 @@ class MarketState extends Equatable {
       maxDistanceKm: clearMaxDistance
           ? null
           : maxDistanceKm ?? this.maxDistanceKm,
-      priceTier: clearPriceTier ? null : priceTier ?? this.priceTier,
       userLatitude: userLatitude ?? this.userLatitude,
       userLongitude: userLongitude ?? this.userLongitude,
       locationLabel: locationLabel ?? this.locationLabel,
@@ -157,7 +148,6 @@ class MarketState extends Equatable {
     offersOnly,
     sortByDistance,
     maxDistanceKm,
-    priceTier,
     userLatitude,
     userLongitude,
     locationLabel,

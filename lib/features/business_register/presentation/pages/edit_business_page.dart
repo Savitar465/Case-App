@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -310,7 +311,15 @@ class _InfoSectionState extends State<_InfoSection> {
                 controller: _whatsapp,
                 hintText: 'WhatsApp',
                 keyboardType: TextInputType.phone,
-                prefixIcon: const Icon(Icons.chat, color: Color(0xFF25D366)),
+                prefixIcon: const Align(
+                  widthFactor: 1,
+                  heightFactor: 1,
+                  child: FaIcon(
+                    FontAwesomeIcons.whatsapp,
+                    color: Color(0xFF25D366),
+                    size: 20,
+                  ),
+                ),
                 onChanged: (v) => edit((d) => d.copyWith(whatsapp: v)),
               ),
             ),
@@ -429,7 +438,7 @@ class _SocialSectionState extends State<_SocialSection> {
           label: 'TikTok',
           badge: const SocialBadge(
             color: Color(0xFF111111),
-            icon: Icons.music_note,
+            icon: FontAwesomeIcons.tiktok,
           ),
           controller: _tiktok,
           onChanged: (v) => edit((d) => d.copyWith(tiktok: v)),
@@ -438,7 +447,7 @@ class _SocialSectionState extends State<_SocialSection> {
           label: 'Facebook',
           badge: const SocialBadge(
             color: Color(0xFF1877F2),
-            icon: Icons.facebook,
+            icon: FontAwesomeIcons.facebookF,
           ),
           controller: _facebook,
           onChanged: (v) => edit((d) => d.copyWith(facebook: v)),
@@ -447,7 +456,7 @@ class _SocialSectionState extends State<_SocialSection> {
           label: 'Instagram',
           badge: const SocialBadge(
             color: Color(0xFFE1306C),
-            icon: Icons.camera_alt,
+            icon: FontAwesomeIcons.instagram,
           ),
           controller: _instagram,
           onChanged: (v) => edit((d) => d.copyWith(instagram: v)),
@@ -456,7 +465,7 @@ class _SocialSectionState extends State<_SocialSection> {
           label: 'Página web',
           badge: const SocialBadge(
             color: Color(0xFF1A73E8),
-            icon: Icons.public,
+            icon: FontAwesomeIcons.globe,
           ),
           controller: _website,
           keyboardType: TextInputType.url,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_palette.dart';
@@ -223,7 +224,7 @@ class _OfferDetailSheet extends StatelessWidget {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    icon: const Icon(Icons.chat),
+                    icon: const FaIcon(FontAwesomeIcons.whatsapp),
                     label: Text(hasWhatsapp ? 'WhatsApp' : 'Sin WhatsApp'),
                   ),
                 ),
