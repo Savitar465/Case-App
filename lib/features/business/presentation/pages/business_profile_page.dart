@@ -1178,10 +1178,7 @@ class _SocialNetworksSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeader(
-          leadingIcon: Icons.tag,
-          title: 'Redes sociales',
-        ),
+        const _SectionHeader(leadingIcon: Icons.tag, title: 'Redes sociales'),
         const SizedBox(height: 12),
         Wrap(
           spacing: 12,
