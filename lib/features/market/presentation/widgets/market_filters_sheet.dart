@@ -33,7 +33,6 @@ class _MarketFiltersSheetState extends State<MarketFiltersSheet> {
   late double _distanceValue;
   late bool _openNow;
   late bool _offersOnly;
-  String? _selectedPriceTier;
 
   @override
   void initState() {
@@ -42,7 +41,6 @@ class _MarketFiltersSheetState extends State<MarketFiltersSheet> {
     _distanceValue = state.maxDistanceKm ?? 5.0;
     _openNow = state.openNowOnly;
     _offersOnly = state.offersOnly;
-    _selectedPriceTier = state.priceTier;
   }
 
   void _resetFilters() {
@@ -50,7 +48,6 @@ class _MarketFiltersSheetState extends State<MarketFiltersSheet> {
       _distanceValue = 5.0;
       _openNow = false;
       _offersOnly = false;
-      _selectedPriceTier = null;
     });
   }
 
@@ -65,8 +62,6 @@ class _MarketFiltersSheetState extends State<MarketFiltersSheet> {
       offersOnly: _offersOnly,
       maxDistanceKm: maxDist,
       clearMaxDistance: maxDist == null,
-      priceTier: _selectedPriceTier,
-      clearPriceTier: _selectedPriceTier == null,
     );
     Navigator.of(context).pop();
   }
@@ -130,19 +125,6 @@ class _MarketFiltersSheetState extends State<MarketFiltersSheet> {
                 value: _offersOnly,
                 activeColor: const Color(0xFF22C55E),
                 onChanged: (val) => setState(() => _offersOnly = val),
-              ),
-              const SizedBox(height: 20),
-              _SectionTitle(title: 'Precio'),
-              const SizedBox(height: 10),
-              _PriceTierSelector(
-                selectedTier: _selectedPriceTier,
-                onSelected: (tier) {
-                  setState(() {
-                    _selectedPriceTier = _selectedPriceTier == tier
-                        ? null
-                        : tier;
-                  });
-                },
               ),
               const SizedBox(height: 28),
               _FooterButtons(onClear: _resetFilters, onApply: _applyFilters),
@@ -356,85 +338,6 @@ class _ToggleCard extends StatelessWidget {
             onChanged: onChanged,
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _PriceTierSelector extends StatelessWidget {
-  const _PriceTierSelector({
-    required this.selectedTier,
-    required this.onSelected,
-  });
-
-  final String? selectedTier;
-  final ValueChanged<String> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final tiers = [
-      ('economic', 'Económico (\$)'),
-      ('medium', 'Medio (\$\$)'),
-      ('premium', 'Premium (\$\$\$)'),
-    ];
-
-    return Row(
-      children: [
-        for (var i = 0; i < tiers.length; i++) ...[
-          if (i > 0) const SizedBox(width: 8),
-          Expanded(
-            child: _PriceTierChip(
-              label: tiers[i].$2,
-              isSelected: selectedTier == tiers[i].$1,
-              onTap: () => onSelected(tiers[i].$1),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _PriceTierChip extends StatelessWidget {
-  const _PriceTierChip({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-
-    return Material(
-      color: isSelected ? palette.purpleSurface : palette.mutedFill,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: isSelected ? AppColors.purple : palette.neutralBorder,
-          width: isSelected ? 1.5 : 1,
-        ),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Center(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? AppColors.purple : palette.textPrimary,
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }

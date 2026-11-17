@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/theme/app_palette.dart';
@@ -336,7 +337,10 @@ class _ContactStep extends StatelessWidget {
         const SizedBox(height: 16),
         Row(
           children: [
-            const SocialBadge(color: Color(0xFF25D366), icon: Icons.chat),
+            const SocialBadge(
+              color: Color(0xFF25D366),
+              icon: FontAwesomeIcons.whatsapp,
+            ),
             const SizedBox(width: 10),
             const Text(
               'WhatsApp',
@@ -368,7 +372,7 @@ class _ContactStep extends StatelessWidget {
           label: 'TikTok',
           badge: const SocialBadge(
             color: Color(0xFF111111),
-            icon: Icons.music_note,
+            icon: FontAwesomeIcons.tiktok,
           ),
           controller: tiktok,
           onChanged: cubit.setTiktok,
@@ -377,7 +381,7 @@ class _ContactStep extends StatelessWidget {
           label: 'Facebook',
           badge: const SocialBadge(
             color: Color(0xFF1877F2),
-            icon: Icons.facebook,
+            icon: FontAwesomeIcons.facebookF,
           ),
           controller: facebook,
           onChanged: cubit.setFacebook,
@@ -386,7 +390,7 @@ class _ContactStep extends StatelessWidget {
           label: 'Instagram',
           badge: const SocialBadge(
             color: Color(0xFFE1306C),
-            icon: Icons.camera_alt,
+            icon: FontAwesomeIcons.instagram,
           ),
           controller: instagram,
           onChanged: cubit.setInstagram,
@@ -395,7 +399,7 @@ class _ContactStep extends StatelessWidget {
           label: 'Página web',
           badge: const SocialBadge(
             color: Color(0xFF1A73E8),
-            icon: Icons.public,
+            icon: FontAwesomeIcons.globe,
           ),
           controller: website,
           onChanged: cubit.setWebsite,

@@ -1,14 +1,20 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_palette.dart';
-import '../../../../core/widgets/static_location_map.dart';
 import '../../../market/domain/entities/category.dart';
+import '../../domain/entities/business_registration_failure.dart';
 import '../../domain/entities/day_schedule.dart';
+import '../../domain/entities/place_suggestion.dart';
+import '../../domain/repositories/place_search_repository.dart';
+import '../bloc/place_search_cubit.dart';
 import 'register_widgets.dart';
 
 /// Business form pieces shared by the registration wizard and the edit page.
@@ -85,18 +91,19 @@ class SocialBadge extends StatelessWidget {
   const SocialBadge({super.key, required this.color, required this.icon});
 
   final Color color;
-  final IconData icon;
+  final FaIconData icon;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: 48,
       height: 48,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Icon(icon, color: Colors.white, size: 26),
+      child: FaIcon(icon, color: Colors.white, size: 24),
     );
   }
 }
@@ -376,7 +383,8 @@ class _TimeChip extends StatelessWidget {
 }
 
 // ── Location ─────────────────────────────────────────────────────────────
-/// Address search field + tappable map + "use my location" button.
+/// Address search field with live suggestions + tappable map + "use my
+/// location" button.
 class BusinessLocationPicker extends StatefulWidget {
   const BusinessLocationPicker({
     super.key,
@@ -402,20 +410,42 @@ class _BusinessLocationPickerState extends State<BusinessLocationPicker> {
   /// Sierra, Bolivia (matches the default +591 country code).
   static const LatLng _fallbackCenter = LatLng(-17.7834, -63.1821);
 
-  final MapController _mapController = MapController();
+  static const MarkerId _pinId = MarkerId('business-location');
+
+  /// The map lives inside a scrolling form; claiming gestures eagerly lets the
+  /// user pan/zoom the map instead of scrolling the page.
+  static final Set<Factory<OneSequenceGestureRecognizer>> _mapGestures = {
+    Factory<OneSequenceGestureRecognizer>(EagerGestureRecognizer.new),
+  };
+
+  GoogleMapController? _mapController;
+  late final PlaceSearchCubit _placeSearch;
   bool _locating = false;
 
   @override
+  void initState() {
+    super.initState();
+    _placeSearch = PlaceSearchCubit(
+      repository: context.read<PlaceSearchRepository>(),
+    );
+  }
+
+  @override
   void dispose() {
-    _mapController.dispose();
+    _placeSearch.close();
+    _mapController?.dispose();
     super.dispose();
+  }
+
+  void _moveCamera(LatLng point) {
+    _mapController?.animateCamera(CameraUpdate.newLatLngZoom(point, 16));
   }
 
   /// Persists a chosen coordinate and reverse-geocodes it into the address
   /// field so the user sees a human-readable location.
   Future<void> _selectPoint(LatLng point, {bool recenter = false}) async {
     widget.onLocationChanged(point.latitude, point.longitude);
-    if (recenter) _mapController.move(point, 16);
+    if (recenter) _moveCamera(point);
 
     try {
       final placemarks = await placemarkFromCoordinates(
@@ -429,6 +459,32 @@ class _BusinessLocationPickerState extends State<BusinessLocationPicker> {
       widget.onAddressChanged(address);
     } catch (_) {
       // Reverse geocoding is best-effort; the pin is already saved.
+    }
+  }
+
+  void _onAddressTyped(String value) {
+    widget.onAddressChanged(value);
+    // Bias suggestions towards the pin, or the default city before one is set.
+    _placeSearch.queryChanged(
+      value,
+      nearLatitude: widget.latitude ?? _fallbackCenter.latitude,
+      nearLongitude: widget.longitude ?? _fallbackCenter.longitude,
+    );
+  }
+
+  /// Fills the address with the tapped suggestion and drops the pin on it.
+  Future<void> _selectSuggestion(PlaceSuggestion suggestion) async {
+    FocusScope.of(context).unfocus();
+    widget.addressController.text = suggestion.fullText;
+    widget.onAddressChanged(suggestion.fullText);
+    try {
+      final place = await _placeSearch.select(suggestion);
+      if (!mounted) return;
+      widget.onLocationChanged(place.latitude, place.longitude);
+      _moveCamera(LatLng(place.latitude, place.longitude));
+    } on BusinessRegistrationFailure catch (failure) {
+      debugPrint('Place details failed: ${failure.message}');
+      if (mounted) _showMessage('No pudimos ubicar esa dirección.');
     }
   }
 
@@ -469,6 +525,7 @@ class _BusinessLocationPickerState extends State<BusinessLocationPicker> {
   Future<void> _searchAddress(String query) async {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return;
+    _placeSearch.clear();
     try {
       final results = await locationFromAddress(trimmed);
       if (!mounted || results.isEmpty) {
@@ -478,7 +535,7 @@ class _BusinessLocationPickerState extends State<BusinessLocationPicker> {
       final match = results.first;
       final point = LatLng(match.latitude, match.longitude);
       widget.onLocationChanged(point.latitude, point.longitude);
-      _mapController.move(point, 16);
+      _moveCamera(point);
     } catch (_) {
       if (mounted) _showMessage('No encontramos esa dirección.');
     }
@@ -513,43 +570,38 @@ class _BusinessLocationPickerState extends State<BusinessLocationPicker> {
           hintText: 'Buscar dirección o zona',
           prefixIcon: Icon(Icons.search, color: context.palette.textTertiary),
           textInputAction: TextInputAction.search,
-          onChanged: widget.onAddressChanged,
+          onChanged: _onAddressTyped,
           onSubmitted: _searchAddress,
+        ),
+        BlocBuilder<PlaceSearchCubit, PlaceSearchState>(
+          bloc: _placeSearch,
+          builder: (context, state) =>
+              _PlaceSuggestionList(state: state, onSelected: _selectSuggestion),
         ),
         const SizedBox(height: 16),
         ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: SizedBox(
             height: 240,
-            child: FlutterMap(
-              mapController: _mapController,
-              options: MapOptions(
-                initialCenter: point ?? _fallbackCenter,
-                initialZoom: point != null ? 16 : 12,
-                onTap: (_, tapped) => _selectPoint(tapped),
+            child: GoogleMap(
+              initialCameraPosition: CameraPosition(
+                target: point ?? _fallbackCenter,
+                zoom: point != null ? 16 : 12,
               ),
-              children: [
-                TileLayer(
-                  urlTemplate: kOsmTileUrl,
-                  userAgentPackageName: kMapUserAgent,
-                ),
+              onMapCreated: (controller) => _mapController = controller,
+              onTap: _selectPoint,
+              gestureRecognizers: _mapGestures,
+              myLocationButtonEnabled: false,
+              mapToolbarEnabled: false,
+              markers: {
                 if (point != null)
-                  MarkerLayer(
-                    markers: [
-                      Marker(
-                        point: point,
-                        width: 44,
-                        height: 44,
-                        alignment: Alignment.topCenter,
-                        child: const Icon(
-                          Icons.location_on,
-                          color: Colors.red,
-                          size: 44,
-                        ),
-                      ),
-                    ],
+                  Marker(
+                    markerId: _pinId,
+                    position: point,
+                    draggable: true,
+                    onDragEnd: _selectPoint,
                   ),
-              ],
+              },
             ),
           ),
         ),
@@ -579,6 +631,70 @@ class _BusinessLocationPickerState extends State<BusinessLocationPicker> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Suggestions shown under the address field while the user types.
+class _PlaceSuggestionList extends StatelessWidget {
+  const _PlaceSuggestionList({required this.state, required this.onSelected});
+
+  final PlaceSearchState state;
+  final ValueChanged<PlaceSuggestion> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    if (state.suggestions.isEmpty) {
+      return state.isLoading
+          ? const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: LinearProgressIndicator(
+                minHeight: 2,
+                color: AppColors.purple,
+              ),
+            )
+          : const SizedBox.shrink();
+    }
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: context.palette.neutralBorder),
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          children: [
+            for (final suggestion in state.suggestions)
+              ListTile(
+                dense: true,
+                leading: const Icon(
+                  Icons.location_on_outlined,
+                  color: AppColors.purple,
+                ),
+                title: Text(
+                  suggestion.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: context.palette.textPrimary,
+                  ),
+                ),
+                subtitle: suggestion.subtitle.isEmpty
+                    ? null
+                    : Text(
+                        suggestion.subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: context.palette.textSecondary),
+                      ),
+                onTap: () => onSelected(suggestion),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

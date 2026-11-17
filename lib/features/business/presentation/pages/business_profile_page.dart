@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:geocoding/geocoding.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_palette.dart';
@@ -658,7 +658,7 @@ class _ActionButtons extends StatelessWidget {
                 borderRadius: BorderRadius.circular(24),
               ),
             ),
-            icon: const Icon(Icons.chat, size: 18),
+            icon: const FaIcon(FontAwesomeIcons.whatsapp, size: 18),
             label: const Text('WhatsApp'),
           ),
         ),
@@ -1127,13 +1127,13 @@ class _SocialNetworksSection extends StatelessWidget {
 
   final Business business;
 
-  static const Map<String, (IconData, String, Color)> _networkMeta = {
-    'facebook': (Icons.facebook, 'Facebook', Color(0xFF1877F2)),
-    'instagram': (Icons.camera_alt_outlined, 'Instagram', Color(0xFFE4405F)),
-    'tiktok': (Icons.music_note, 'TikTok', Color(0xFF000000)),
-    'twitter': (Icons.alternate_email, 'X (Twitter)', Color(0xFF1DA1F2)),
-    'x': (Icons.alternate_email, 'X', Color(0xFF1DA1F2)),
-    'youtube': (Icons.smart_display_outlined, 'YouTube', Color(0xFFFF0000)),
+  static const Map<String, (FaIconData, String, Color)> _networkMeta = {
+    'facebook': (FontAwesomeIcons.facebookF, 'Facebook', Color(0xFF1877F2)),
+    'instagram': (FontAwesomeIcons.instagram, 'Instagram', Color(0xFFE4405F)),
+    'tiktok': (FontAwesomeIcons.tiktok, 'TikTok', Color(0xFF000000)),
+    'twitter': (FontAwesomeIcons.xTwitter, 'X (Twitter)', Color(0xFF000000)),
+    'x': (FontAwesomeIcons.xTwitter, 'X', Color(0xFF000000)),
+    'youtube': (FontAwesomeIcons.youtube, 'YouTube', Color(0xFFFF0000)),
   };
 
   @override
@@ -1146,7 +1146,7 @@ class _SocialNetworksSection extends StatelessWidget {
         if (str.isEmpty) return;
         final lower = key.toLowerCase();
         final meta = _networkMeta[lower];
-        final icon = meta?.$1 ?? Icons.share;
+        final icon = meta?.$1 ?? FontAwesomeIcons.link;
         final label = meta?.$2 ?? key;
         final color = meta?.$3 ?? AppColors.purple;
         entries.add(
@@ -1164,7 +1164,7 @@ class _SocialNetworksSection extends StatelessWidget {
     if (website != null && website.trim().isNotEmpty) {
       entries.add(
         _SocialEntry(
-          icon: Icons.language,
+          icon: FontAwesomeIcons.globe,
           label: 'Sitio web',
           handle: website.trim(),
           color: AppColors.purple,
@@ -1178,50 +1178,32 @@ class _SocialNetworksSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeader(
-          leadingIcon: Icons.share_outlined,
-          title: 'Redes sociales',
-        ),
+        const _SectionHeader(leadingIcon: Icons.tag, title: 'Redes sociales'),
         const SizedBox(height: 12),
         Wrap(
-          spacing: 10,
-          runSpacing: 10,
+          spacing: 12,
+          runSpacing: 12,
           children: [
             for (final entry in entries)
-              Material(
-                color: context.palette.purpleSurface,
-                borderRadius: BorderRadius.circular(12),
-                child: InkWell(
-                  onTap: entry.onTap,
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: context.palette.border),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(entry.icon, color: entry.color, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          entry.label,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                          ),
+              Tooltip(
+                message: entry.label,
+                child: Material(
+                  color: entry.color,
+                  shape: const CircleBorder(),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: entry.onTap,
+                    child: SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: Center(
+                        child: FaIcon(
+                          entry.icon,
+                          color: Colors.white,
+                          size: 22,
+                          semanticLabel: entry.label,
                         ),
-                        const SizedBox(width: 6),
-                        Icon(
-                          Icons.open_in_new,
-                          size: 13,
-                          color: context.palette.textTertiary,
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -1242,7 +1224,7 @@ class _SocialEntry {
     required this.onTap,
   });
 
-  final IconData icon;
+  final FaIconData icon;
   final String label;
   final String handle;
   final Color color;
@@ -1278,7 +1260,7 @@ class _WhatsappFab extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
       ),
-      icon: const Icon(Icons.chat),
+      icon: const FaIcon(FontAwesomeIcons.whatsapp),
       label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
     );
   }
@@ -1623,40 +1605,10 @@ class _WeeklyScheduleRow extends StatelessWidget {
   }
 }
 
-class _LocationSection extends StatefulWidget {
+class _LocationSection extends StatelessWidget {
   const _LocationSection({required this.business});
 
   final Business business;
-
-  @override
-  State<_LocationSection> createState() => _LocationSectionState();
-}
-
-class _LocationSectionState extends State<_LocationSection> {
-  Business get business => widget.business;
-
-  /// "Calle 123" for the map link; falls back to the first address segment.
-  late final Future<String> _streetLabel = _resolveStreetLabel();
-
-  Future<String> _resolveStreetLabel() async {
-    final fallback = business.address.split(',').first.trim();
-    if (business.latitude == 0 && business.longitude == 0) return fallback;
-    try {
-      final placemarks = await placemarkFromCoordinates(
-        business.latitude,
-        business.longitude,
-      );
-      if (placemarks.isEmpty) return fallback;
-      final p = placemarks.first;
-      final street = (p.thoroughfare ?? '').trim();
-      final number = (p.subThoroughfare ?? '').trim();
-      if (street.isEmpty) return fallback;
-      return number.isEmpty ? street : '$street $number';
-    } catch (error) {
-      debugPrint('Reverse geocoding failed: $error');
-      return fallback;
-    }
-  }
 
   void _openMap(BuildContext context) {
     ContactLauncher.openGoogleMaps(
@@ -1672,73 +1624,19 @@ class _LocationSectionState extends State<_LocationSection> {
     final hasCoords = business.latitude != 0 || business.longitude != 0;
     final hasAddress = business.address.trim().isNotEmpty;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        InkWell(
-          onTap: (hasCoords || hasAddress) ? () => _openMap(context) : null,
-          borderRadius: BorderRadius.circular(8),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(Icons.location_on, color: Colors.redAccent, size: 18),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  business.address,
-                  style: const TextStyle(fontSize: 14),
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (hasCoords || hasAddress) ...[
-          const SizedBox(height: 6),
-          InkWell(
-            onTap: () => _openMap(context),
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.map_outlined,
-                    size: 16,
-                    color: AppColors.purple,
-                  ),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: FutureBuilder<String>(
-                      future: _streetLabel,
-                      builder: (context, snapshot) {
-                        final street = snapshot.data ?? '';
-                        return Text(
-                          street.isEmpty ? 'Ver en Google Maps' : street,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.purple,
-                            decoration: TextDecoration.underline,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Icon(
-                    Icons.open_in_new,
-                    size: 13,
-                    color: AppColors.purple,
-                  ),
-                ],
-              ),
-            ),
+    return InkWell(
+      onTap: (hasCoords || hasAddress) ? () => _openMap(context) : null,
+      borderRadius: BorderRadius.circular(8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.location_on, color: Colors.redAccent, size: 18),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(business.address, style: const TextStyle(fontSize: 14)),
           ),
         ],
-      ],
+      ),
     );
   }
 }
