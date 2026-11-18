@@ -3,7 +3,7 @@ import 'package:market_app/core/theme/app_colors.dart';
 
 import '../../../../core/theme/app_palette.dart';
 
-/// Bottom navigation with a tinted pill behind the selected destination.
+/// Bottom navigation for the home screen.
 class HomeBottomNav extends StatelessWidget {
   const HomeBottomNav({
     super.key,
@@ -87,17 +87,8 @@ class _NavItem extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-          margin: const EdgeInsets.symmetric(horizontal: 6),
+        child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: selected
-                ? context.palette.purpleSurface
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(14),
-          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

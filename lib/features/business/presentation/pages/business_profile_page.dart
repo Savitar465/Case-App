@@ -82,12 +82,6 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
     });
   }
 
-  void _clearSelectedItems() {
-    setState(() {
-      _selectedItems.clear();
-    });
-  }
-
   void _openWhatsApp() {
     final whatsapp = _business.whatsapp;
     if (whatsapp == null) return;
@@ -177,11 +171,10 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
                         offerListCubit: _offerListCubit,
                         selectedItems: _selectedItems,
                         onSelectItem: _onSelectItem,
-                        onClearSelected: _clearSelectedItems,
                         onContactWhatsApp: _openWhatsApp,
                       ),
                     ),
-                    SizedBox(height: whatsapp != null ? 60 : 12),
+                    SizedBox(height: whatsapp != null ? 76 : 12),
                   ],
                 ),
               ),
@@ -194,10 +187,7 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
                 bottom: 16,
                 child: _WhatsappFab(
                   onPressed: _openWhatsApp,
-                  selectedCount: _selectedItems.length,
-                  singleItemName: _selectedItems.length == 1
-                      ? _selectedItems.values.first.name
-                      : null,
+                  selectedItems: _selectedItems,
                 ),
               ),
           ],
@@ -263,7 +253,6 @@ class _ContentCard extends StatelessWidget {
     required this.offerListCubit,
     this.selectedItems = const {},
     this.onSelectItem,
-    this.onClearSelected,
     this.onContactWhatsApp,
   });
 
@@ -272,7 +261,6 @@ class _ContentCard extends StatelessWidget {
   final OfferListCubit offerListCubit;
   final Map<String, Item> selectedItems;
   final ValueChanged<Item>? onSelectItem;
-  final VoidCallback? onClearSelected;
   final VoidCallback? onContactWhatsApp;
 
   void _openItems(BuildContext context) {
@@ -336,118 +324,6 @@ class _ContentCard extends StatelessWidget {
             cubit: offerListCubit,
             onSeeAll: () => _openOffers(context),
           ),
-          _SectionLabel(
-            icon: Icons.touch_app_outlined,
-            text: 'Selecciona lo que te interesa para consultar',
-          ),
-          if (selectedItems.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.purple.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.purple),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.check_circle,
-                        color: AppColors.purple,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          selectedItems.length == 1
-                              ? '1 elemento seleccionado'
-                              : '${selectedItems.length} elementos seleccionados',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.purple,
-                          ),
-                        ),
-                      ),
-                      if (onClearSelected != null)
-                        InkWell(
-                          onTap: onClearSelected,
-                          borderRadius: BorderRadius.circular(8),
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            child: Text(
-                              'Limpiar',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.purple,
-                                decoration: TextDecoration.underline,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      for (final item in selectedItems.values)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: context.palette.surface,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: AppColors.purple.withValues(alpha: 0.5),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              ConstrainedBox(
-                                constraints: const BoxConstraints(
-                                  maxWidth: 160,
-                                ),
-                                child: Text(
-                                  item.name,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              InkWell(
-                                onTap: () => onSelectItem?.call(item),
-                                child: const Icon(
-                                  Icons.close,
-                                  size: 14,
-                                  color: AppColors.purple,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-          const SizedBox(height: 12),
           BusinessItemsSection(
             businessId: business.id,
             cubit: itemListCubit,
@@ -1004,33 +880,6 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: AppColors.purple, size: 18),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            text,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: context.palette.textPrimary,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _ReviewCard extends StatelessWidget {
   const _ReviewCard({required this.review});
 
@@ -1231,29 +1080,37 @@ class _SocialEntry {
   final VoidCallback onTap;
 }
 
-class _WhatsappFab extends StatelessWidget {
-  const _WhatsappFab({
-    required this.onPressed,
-    this.selectedCount = 0,
-    this.singleItemName,
-  });
+class _WhatsappFab extends StatefulWidget {
+  const _WhatsappFab({required this.onPressed, this.selectedItems = const {}});
 
   final VoidCallback onPressed;
-  final int selectedCount;
-  final String? singleItemName;
+  final Map<String, Item> selectedItems;
+
+  @override
+  State<_WhatsappFab> createState() => _WhatsappFabState();
+}
+
+class _WhatsappFabState extends State<_WhatsappFab> {
+  final GlobalKey<TooltipState> _tooltipKey = GlobalKey<TooltipState>();
 
   @override
   Widget build(BuildContext context) {
+    final int selectedCount = widget.selectedItems.length;
     final String label;
     if (selectedCount == 0) {
       label = 'Consultar por WhatsApp';
     } else if (selectedCount == 1) {
+      final singleItemName = widget.selectedItems.values.first.name;
       label = 'Consultar sobre "$singleItemName"';
     } else {
       label = 'Consultar sobre $selectedCount productos';
     }
-    return FilledButton.icon(
-      onPressed: onPressed,
+
+    final button = FilledButton.icon(
+      onPressed: widget.onPressed,
+      onLongPress: selectedCount > 0
+          ? () => _tooltipKey.currentState?.ensureTooltipVisible()
+          : null,
       style: FilledButton.styleFrom(
         backgroundColor: AppColors.whatsapp,
         minimumSize: const Size.fromHeight(52),
@@ -1261,7 +1118,93 @@ class _WhatsappFab extends StatelessWidget {
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
       ),
       icon: const FaIcon(FontAwesomeIcons.whatsapp),
-      label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+          ),
+          if (selectedCount > 0) ...[
+            const SizedBox(width: 8),
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _tooltipKey.currentState?.ensureTooltipVisible(),
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.18),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.info_outline_rounded,
+                  size: 16,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+
+    if (selectedCount == 0) {
+      return button;
+    }
+
+    return Tooltip(
+      key: _tooltipKey,
+      preferBelow: false,
+      verticalOffset: 28,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: context.palette.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: AppColors.purple.withValues(alpha: 0.5),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: context.palette.shadow,
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      richMessage: TextSpan(
+        children: [
+          TextSpan(
+            text: selectedCount == 1
+                ? 'Elemento a consultar:\n'
+                : '$selectedCount elementos a consultar:\n',
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+              color: AppColors.purple,
+            ),
+          ),
+          for (final item in widget.selectedItems.values) ...[
+            TextSpan(
+              text: '\n• ${item.name}',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                color: context.palette.textPrimary,
+              ),
+            ),
+            if (item.price > 0)
+              TextSpan(
+                text: ' (${formatItemPrice(item.currency, item.price)})',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: context.palette.textSecondary,
+                ),
+              ),
+          ],
+        ],
+      ),
+      child: button,
     );
   }
 }
