@@ -82,12 +82,6 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
     });
   }
 
-  void _clearSelectedItems() {
-    setState(() {
-      _selectedItems.clear();
-    });
-  }
-
   void _openWhatsApp() {
     final whatsapp = _business.whatsapp;
     if (whatsapp == null) return;
@@ -886,7 +880,6 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-
 class _ReviewCard extends StatelessWidget {
   const _ReviewCard({required this.review});
 
@@ -1088,10 +1081,7 @@ class _SocialEntry {
 }
 
 class _WhatsappFab extends StatefulWidget {
-  const _WhatsappFab({
-    required this.onPressed,
-    this.selectedItems = const {},
-  });
+  const _WhatsappFab({required this.onPressed, this.selectedItems = const {}});
 
   final VoidCallback onPressed;
   final Map<String, Item> selectedItems;
@@ -1124,24 +1114,15 @@ class _WhatsappFabState extends State<_WhatsappFab> {
       style: FilledButton.styleFrom(
         backgroundColor: AppColors.whatsapp,
         minimumSize: const Size.fromHeight(52),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(28),
-        ),
-        textStyle: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w700,
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
       ),
       icon: const FaIcon(FontAwesomeIcons.whatsapp),
       label: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Flexible(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+            child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
           ),
           if (selectedCount > 0) ...[
             const SizedBox(width: 8),
